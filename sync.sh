@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
-# 把本地改动同步到 GitHub（默认 https://github.com/Longmaoxs/march-aa）
-# 用法： ./sync.sh "改了什么"
+# march-aa 同步：提交 + 推送（身份已固定在仓库 config 里）
 set -euo pipefail
 cd "$(dirname "$0")"
 
-msg="${1:-update: $(date '+%Y-%m-%d %H:%M')}"
-
 git add -A
 if git diff --cached --quiet; then
-  echo "没有要提交的改动。"
+  echo "没有改动，跳过提交"
 else
-  git commit -m "$msg"
-  echo "已提交：$msg"
+  git commit -q -m "${1:-update}"
+  echo "已提交：$(git log --oneline -1)"
 fi
-
 git push origin main
-echo "已同步到 GitHub。"
+echo "已推送：$(git log --oneline -1)"
