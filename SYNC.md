@@ -18,6 +18,29 @@ ssh -T git@github.com     # 期望：Hi Longmaoxs! You've successfully authentic
 > 换机器时：`ssh-keygen -t ed25519 -C "you@host" -f ~/.ssh/id_ed25519 -N ""`，
 > 把 `~/.ssh/id_ed25519.pub` 贴到 <https://github.com/settings/ssh/new> 即可。
 
+## 提交身份（别改错）
+
+本仓库的 `user.name` / `user.email` 写在**仓库级** config 里：
+
+```
+user.name  = Louis
+user.email = 356496579+Longmaoxs@users.noreply.github.com
+```
+
+`@users.noreply.github.com` 是按**用户名**分配的，不能随便编：`louis@users.noreply.github.com`
+属于另一个登录名为 `louis` 的账号，用它提交，GitHub 会把 commit 算到那个人名下
+（Contributors 里出现 "Louis Gates"）。自己的正确形式是
+`<数字ID>+<登录名>@users.noreply.github.com`。
+
+换机器或重新克隆后，进目录先跑一次：
+
+```bash
+git config user.name  "Louis"
+git config user.email "356496579+Longmaoxs@users.noreply.github.com"
+```
+
+也可以去 GitHub 设置里勾 *Keep my email addresses private*，它会把这个邮箱显示给你。
+
 ## 平时
 
 改完代码/文档，一条命令：
