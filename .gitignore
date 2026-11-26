@@ -1,8 +1,4 @@
 __pycache__/
 *.pyc
 .DS_Store
-/tmp/
-# 生成物（示例图已在 out/ 里，其余临时输出不进仓）
-out/*_v*.png
-out/*_test*.png
 out/*.png
