@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-label="march-aa · structure view">
+  <title>march-aa · structure view</title>
+  <rect width="1200" height="320" fill="#FAF9F6"/>
+  <g transform="translate(64,64) scale(0.375)">
+
+    <rect width="512" height="512" fill="#9C2A26"/>
+    <path d="M60 168 L452 168 L452 184 L60 184 Z" fill="#FAF7F2"/>
+    <path d="M60 168 L84 152 L84 168 Z" fill="#FAF7F2"/>
+    <path d="M452 168 L428 152 L428 168 Z" fill="#FAF7F2"/>
+    <rect x="132" y="204" width="248" height="18" fill="#FAF7F2"/>
+    <rect x="104" y="204" width="34" height="18" fill="#FAF7F2"/>
+    <rect x="374" y="204" width="34" height="18" fill="#FAF7F2"/>
+    <rect x="164" y="238" width="184" height="18" fill="#FAF7F2"/>
+    <rect x="136" y="238" width="34" height="18" fill="#FAF7F2"/>
+    <rect x="342" y="238" width="34" height="18" fill="#FAF7F2"/>
+    <rect x="196" y="272" width="120" height="18" fill="#FAF7F2"/>
+    <path d="M242 290 L270 290 L274 392 L238 392 Z" fill="#FAF7F2"/>
+    <rect x="196" y="392" width="120" height="16" fill="#FAF7F2"/>
+    <rect x="156" y="408" width="200" height="12" fill="#FAF7F2"/>
+    <rect x="252" y="120" width="8" height="300" fill="#F3C9C2" opacity="0.55"/>
+    <circle cx="256" cy="120" r="9" fill="#F3C9C2"/>
+    <path d="M256 404 L246 384 L266 384 Z" fill="#F3C9C2"/>
+  
+  </g>
+  <text x="284" y="150" font-family="'Songti SC','Noto Serif SC',Georgia,serif" font-size="86" fill="#23201D" letter-spacing="2">march-aa</text>
+  <text x="288" y="204" font-family="'Songti SC','Noto Serif SC',Georgia,serif" font-size="34" fill="#9C2A26" letter-spacing="6">古建构造技能</text>
+  <text x="288" y="248" font-family="'PingFang SC','Helvetica Neue',Arial,sans-serif" font-size="26" fill="#7A7570" letter-spacing="1">transparent structure · axonometric plates</text>
+</svg>

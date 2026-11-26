@@ -1,0 +1,4 @@
+LXGW WenKai (霞鹜文楷) is licensed under the SIL Open Font License, Version 1.1.
+Copyright (c) 2021, LXGW / 落霞孤鹜.
+OFL text: https://scripts.sil.org/OFL
+This font is bundled only as a fallback for the plate renderer.

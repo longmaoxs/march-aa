@@ -1,0 +1,19 @@
+{
+ "family": "ting",
+ "ratio": "3:4",
+ "photo": "/Users/louis/Downloads/a99e54bc62de74b266f06deca3d0095a.jpeg",
+ "title": "重檐攒尖亭",
+ "subtitle": "· 构造关系轴测",
+ "desc": [
+  "方形重檐攒尖顶，下层外廊通透，上层槛窗围合。",
+  "透明画法：屋面为玻璃罩，被遮构件降为浅虚线；朱红线为传力路径。"
+ ],
+ "params": {
+  "side": 4.2,
+  "eaves": 2,
+  "col_per_side": 2,
+  "brackets": true,
+  "finial": true,
+  "lattice": true
+ }
+}

@@ -1,0 +1,16 @@
+{
+ "family": "lou",
+ "ratio": "3:4",
+ "title": "二层楼阁",
+ "subtitle": "· 构造关系轴测",
+ "desc": [
+  "平坐挑出、腰檐环护——楼阁之所以为楼阁。",
+  "首层柱网承重，上层收分，攒尖顶收于宝顶。"
+ ],
+ "params": {
+  "side": 7.0,
+  "floors": 2,
+  "col_per_side": 3,
+  "brackets": true
+ }
+}

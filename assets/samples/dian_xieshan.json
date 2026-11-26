@@ -1,0 +1,18 @@
+{
+ "family": "dian",
+ "ratio": "3:4",
+ "title": "歇山殿堂",
+ "subtitle": "· 构造关系轴测",
+ "desc": [
+  "面阔五间、进深三间，檐柱环列，金柱承梁架。",
+  "屋架—斗拱—额枋—檐柱—台基，一条竖向传力链。"
+ ],
+ "params": {
+  "style": "xieshan",
+  "bays": 5,
+  "bay": 3.6,
+  "depth_bays": 3,
+  "bayd": 3.1,
+  "brackets": true
+ }
+}

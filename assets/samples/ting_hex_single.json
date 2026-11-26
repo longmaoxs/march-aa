@@ -1,0 +1,19 @@
+{
+ "family": "ting",
+ "ratio": "3:4",
+ "title": "六角单檐亭",
+ "subtitle": "· 构造关系轴测",
+ "desc": [
+  "六柱六坡攒尖，角部起翘，柱头直接承檩。",
+  "单檐做法：省去斗拱与平坐，构造链短一档。"
+ ],
+ "params": {
+  "side": 3.6,
+  "eaves": 1,
+  "col_per_side": 2,
+  "brackets": false,
+  "finial": true,
+  "lattice": true,
+  "sides": 6
+ }
+}
