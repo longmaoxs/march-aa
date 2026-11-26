@@ -41,6 +41,10 @@ git config user.email "356496579+longmaoxs@users.noreply.github.com"
 
 也可以去 GitHub 设置里勾 *Keep my email addresses private*，它会把这个邮箱显示给你。
 
+> 2026-11 账号已由 `Longmaoxs` 改名为 `longmaoxs`（用户 ID 不变）。改名后无需改写历史：
+> noreply 邮箱里真正标识身份的是前面的数字 ID，旧提交里的 `…+Longmaoxs@…` 依然归到同一账号。
+> 只需把 remote、`user.email` 和文档里的拼写换成小写。
+
 ## 平时
 
 改完代码/文档，一条命令：
