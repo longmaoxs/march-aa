@@ -176,6 +176,10 @@ saved: out/ting.png (2400×3200)  主体 329–2070 × 872–2931  OK
 - 文档与示例图：CC BY 4.0
 - 字体：霞鹜文楷 LXGW WenKai，SIL OFL 1.1（见 `assets/fonts/LICENSE-LXGWWenKai.txt`）
 
+> `assets/fonts/LXGWWenKai-Regular.ttf` 有 18MB。不想把字体放进仓库的话：
+> `git rm --cached assets/fonts/*.ttf`，脚本会自动回退到系统字体（Mac 苹方/宋体、Windows 微软雅黑、
+> Linux Noto），效果略差但不会报错。
+
 ## 致谢
 
 形制判读参照梁思成《清式营造则例》与《营造法式》的术语体系；
