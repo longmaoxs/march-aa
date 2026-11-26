@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="march-aa mark">
+  <title>march-aa · structure view</title>
+  <rect width="512" height="512" fill="#9C2A26"/>
+  <!-- 吊线：荷载自上而下 -->
+  <rect x="252" y="88" width="8" height="54" fill="#F3C9C2"/>
+  <circle cx="256" cy="88" r="9" fill="#F3C9C2"/>
+  <!-- 檐口：平直厚檐 + 两端起翘 -->
+  <path d="M88 142 L424 142 L424 162 L88 162 Z" fill="#FAF7F2"/>
+  <path d="M88 142 L116 118 L116 142 Z" fill="#FAF7F2"/>
+  <path d="M424 142 L396 118 L396 142 Z" fill="#FAF7F2"/>
+  <!-- 三跳横拱：逐层收进，两侧出跳 -->
+  <rect x="128" y="182" width="256" height="20" fill="#FAF7F2"/>
+  <rect x="98"  y="182" width="34" height="20" fill="#FAF7F2"/>
+  <rect x="380" y="182" width="34" height="20" fill="#FAF7F2"/>
+  <rect x="160" y="218" width="192" height="20" fill="#FAF7F2"/>
+  <rect x="130" y="218" width="34" height="20" fill="#FAF7F2"/>
+  <rect x="348" y="218" width="34" height="20" fill="#FAF7F2"/>
+  <rect x="192" y="254" width="128" height="20" fill="#FAF7F2"/>
+  <!-- 柱身（上收下放） -->
+  <path d="M234 276 L278 276 L284 366 L228 366 Z" fill="#FAF7F2"/>
+  <!-- 台基两级 -->
+  <rect x="192" y="366" width="128" height="18" fill="#FAF7F2"/>
+  <rect x="152" y="384" width="208" height="14" fill="#FAF7F2"/>
+</svg>

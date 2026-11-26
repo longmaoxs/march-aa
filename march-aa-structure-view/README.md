@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/brand/wordmark.svg" alt="march-aa · 古建构造技能" width="720">
+  <img src="assets/brand/wordmark.png" alt="march-aa · 古建构造技能" width="720">
 </p>
 
 <p align="center">

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#9C2A26"/>
+  <g fill="none" stroke="#FAF7F2" stroke-width="14" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M256 132 L392 200 L256 268 L120 200 Z"/>
+    <path d="M120 200 L120 330 L256 398 L392 330 L392 200"/>
+  </g>
+  <!-- 斗拱放大居中 -->
+  <g fill="#FAF7F2">
+    <rect x="176" y="204" width="160" height="20"/>
+    <rect x="200" y="238" width="112" height="20"/>
+    <rect x="232" y="272" width="48" height="62"/>
+  </g>
+  <!-- 力线（只在立方上方） -->
+  <rect x="252" y="76" width="8" height="46" fill="#F3C9C2"/>
+  <circle cx="256" cy="76" r="9" fill="#F3C9C2"/>
+</svg>

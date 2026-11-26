@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#9C2A26"/>
+  <!-- 屋顶：起翘的檐口 + 举折 -->
+  <path d="M56 214 C96 206 132 186 256 128 C380 186 416 206 456 214
+           L456 236 C416 228 380 232 256 186 C132 232 96 228 56 236 Z" fill="#FAF7F2"/>
+  <path d="M56 214 L84 190 L84 214 Z" fill="#FAF7F2"/>
+  <path d="M456 214 L428 190 L428 214 Z" fill="#FAF7F2"/>
+  <!-- 四柱 -->
+  <g fill="#FAF7F2">
+    <rect x="128" y="236" width="22" height="150"/>
+    <rect x="200" y="236" width="22" height="150"/>
+    <rect x="290" y="236" width="22" height="150"/>
+    <rect x="362" y="236" width="22" height="150"/>
+  </g>
+  <!-- 额枋 -->
+  <rect x="128" y="236" width="256" height="16" fill="#FAF7F2" opacity="0.75"/>
+  <!-- 台基 -->
+  <rect x="110" y="386" width="292" height="20" fill="#FAF7F2"/>
+  <rect x="86" y="406" width="340" height="18" fill="#FAF7F2"/>
+  <!-- 力线 -->
+  <rect x="252" y="90" width="8" height="34" fill="#F3C9C2"/>
+  <circle cx="256" cy="90" r="9" fill="#F3C9C2"/>
+</svg>

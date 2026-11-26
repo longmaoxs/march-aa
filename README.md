@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="march-aa-structure-view/assets/brand/wordmark.svg" alt="march-aa" width="720">
+  <img src="march-aa-structure-view/assets/brand/wordmark.png" alt="march-aa" width="720">
 </p>
 
 <p align="center">

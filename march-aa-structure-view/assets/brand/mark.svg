@@ -1,24 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="march-aa mark">
-  <title>march-aa · structure view</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="march-aa">
+  <title>march-aa · 古建构造技能</title>
   <rect width="512" height="512" fill="#9C2A26"/>
-  <!-- 吊线：荷载自上而下 -->
-  <rect x="252" y="88" width="8" height="54" fill="#F3C9C2"/>
-  <circle cx="256" cy="88" r="9" fill="#F3C9C2"/>
-  <!-- 檐口：平直厚檐 + 两端起翘 -->
-  <path d="M88 142 L424 142 L424 162 L88 162 Z" fill="#FAF7F2"/>
-  <path d="M88 142 L116 118 L116 142 Z" fill="#FAF7F2"/>
-  <path d="M424 142 L396 118 L396 142 Z" fill="#FAF7F2"/>
-  <!-- 三跳横拱：逐层收进，两侧出跳 -->
-  <rect x="128" y="182" width="256" height="20" fill="#FAF7F2"/>
-  <rect x="98"  y="182" width="34" height="20" fill="#FAF7F2"/>
-  <rect x="380" y="182" width="34" height="20" fill="#FAF7F2"/>
-  <rect x="160" y="218" width="192" height="20" fill="#FAF7F2"/>
-  <rect x="130" y="218" width="34" height="20" fill="#FAF7F2"/>
-  <rect x="348" y="218" width="34" height="20" fill="#FAF7F2"/>
-  <rect x="192" y="254" width="128" height="20" fill="#FAF7F2"/>
-  <!-- 柱身（上收下放） -->
-  <path d="M234 276 L278 276 L284 366 L228 366 Z" fill="#FAF7F2"/>
+  <!-- 屋面：两坡举折（微凹）+ 厚檐口 -->
+  <path d="M256 112 C230 148 176 190 78 218 L78 246 L434 246 L434 218
+           C336 190 282 148 256 112 Z" fill="#FAF7F2"/>
+  <!-- 两端起翘 -->
+  <path d="M78 218 C64 208 50 204 40 204 L40 216 C56 218 68 228 78 244 Z" fill="#FAF7F2"/>
+  <path d="M434 218 C448 208 462 204 472 204 L472 216 C456 218 444 228 434 244 Z" fill="#FAF7F2"/>
+  <!-- 额枋 -->
+  <rect x="118" y="246" width="278" height="18" fill="#FAF7F2"/>
+  <!-- 四柱 -->
+  <g fill="#FAF7F2">
+    <rect x="118" y="264" width="24" height="120"/>
+    <rect x="202" y="264" width="24" height="120"/>
+    <rect x="286" y="264" width="24" height="120"/>
+    <rect x="370" y="264" width="24" height="120"/>
+  </g>
   <!-- 台基两级 -->
-  <rect x="192" y="366" width="128" height="18" fill="#FAF7F2"/>
-  <rect x="152" y="384" width="208" height="14" fill="#FAF7F2"/>
+  <rect x="102" y="384" width="308" height="22" fill="#FAF7F2"/>
+  <rect x="76" y="406" width="360" height="18" fill="#FAF7F2"/>
+  <!-- 荷载吊线 -->
+  <rect x="252" y="66" width="8" height="34" fill="#F3C9C2"/>
+  <circle cx="256" cy="66" r="9" fill="#F3C9C2"/>
 </svg>
