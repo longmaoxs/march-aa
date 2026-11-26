@@ -1,6 +1,6 @@
 # 同步到 GitHub
 
-仓库地址：<https://github.com/Longmaoxs/march-aa>（远程走 SSH：`git@github.com:Longmaoxs/march-aa.git`）
+仓库地址：<https://github.com/longmaoxs/march-aa>（远程走 SSH：`git@github.com:longmaoxs/march-aa.git`）
 
 本地目录：`/Users/louis/workspace/skills/march-skills/march-aa`
 
@@ -10,10 +10,10 @@
 验证：
 
 ```bash
-ssh -T git@github.com     # 期望：Hi Longmaoxs! You've successfully authenticated...
+ssh -T git@github.com     # 期望：Hi longmaoxs! You've successfully authenticated...
 ```
 
-远程已设为 `git@github.com:Longmaoxs/march-aa.git`，**不需要 token**。
+远程已设为 `git@github.com:longmaoxs/march-aa.git`，**不需要 token**。
 
 > 换机器时：`ssh-keygen -t ed25519 -C "you@host" -f ~/.ssh/id_ed25519 -N ""`，
 > 把 `~/.ssh/id_ed25519.pub` 贴到 <https://github.com/settings/ssh/new> 即可。
@@ -24,7 +24,7 @@ ssh -T git@github.com     # 期望：Hi Longmaoxs! You've successfully authentic
 
 ```
 user.name  = Louis
-user.email = 356496579+Longmaoxs@users.noreply.github.com
+user.email = 356496579+longmaoxs@users.noreply.github.com
 ```
 
 `@users.noreply.github.com` 是按**用户名**分配的，不能随便编：`louis@users.noreply.github.com`
@@ -36,7 +36,7 @@ user.email = 356496579+Longmaoxs@users.noreply.github.com
 
 ```bash
 git config user.name  "Louis"
-git config user.email "356496579+Longmaoxs@users.noreply.github.com"
+git config user.email "356496579+longmaoxs@users.noreply.github.com"
 ```
 
 也可以去 GitHub 设置里勾 *Keep my email addresses private*，它会把这个邮箱显示给你。
