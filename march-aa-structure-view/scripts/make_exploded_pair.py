@@ -104,7 +104,7 @@ def main():
     f_sig2 = SP.font('hei', F(27))
 
     nx = W - NOTE_W + int(6 * ts)
-    nw = NOTE_W - int(58 * ts)   # 右侧多收一些，别顶到边
+    nw = NOTE_W - int(92 * ts)   # 右侧多收一些，别顶到边
     p_ = job.get('params', {})
     comp = p_.get('components') or {}
     roof_name = {'wudian': '庑殿（四阿）', 'xieshan': '歇山', 'yingshan': '悬山',
@@ -162,7 +162,7 @@ def main():
     top_pad = int(28 * ts)
     head_h = int(96 * ts) + int(56 * ts) + len(head_lines) * LH + int(92 * ts) + int(18 * ts)
     ents_h = sum(max(th, int(64 * ts) + len(ls) * LH) for _, _, ls in blocks) + GAP * (len(blocks) - 1)
-    total = top_pad + head_h + ents_h + int(200 * ts) + seal
+    total = top_pad + head_h + ents_h + int(268 * ts) + seal
 
     avail = H - TOP - int(60 * ts)
     y = TOP + int(48 * ts) + max(0, (avail - total) // 2)
@@ -196,18 +196,21 @@ def main():
             cv.text(tx, yy, line, f_note, SP.INK3, anchor='lm'); yy += LH
         y += max(th, yy - y) + GAP
 
-    lg_y = y - GAP + int(200 * ts)         # logo 与末条拉开，但不贴底
+    lg_y = y - GAP + int(268 * ts)         # logo 与末条拉开，但不贴底
     try:
         mk = Image.open(str(Path(__file__).resolve().parent.parent /
                             'assets/brand/mark.png')).convert('RGBA')
         _S = _SC(cv)
         mk = mk.resize((int(seal * _S), int(seal * _S)), Image.LANCZOS)
-        cv.img.paste(mk, (int(nx * _S), int(lg_y * _S)), mk)
+        # 右对齐：图标贴栏右边界，文字在图标左侧、整体右对齐
+        gp = int(26 * ts)
+        R = nx + nw
+        cv.img.paste(mk, (int((R - seal) * _S), int(lg_y * _S)), mk)
         _cy = lg_y + seal // 2
-        cv.text(nx + seal + int(26 * ts), _cy - int(17 * ts), 'march-aa',
-                f_sig, SP.INK, anchor='lm')
-        cv.text(nx + seal + int(26 * ts), _cy + int(25 * ts),
-                '古建构造关系轴测 · structure view', f_sig2, SP.INK3, anchor='lm')
+        cv.text(R - seal - gp, _cy - int(17 * ts), 'march-aa',
+                f_sig, SP.INK, anchor='rm')
+        cv.text(R - seal - gp, _cy + int(25 * ts),
+                '古建构造关系轴测 · structure view', f_sig2, SP.INK3, anchor='rm')
     except Exception as e:
         print('logo skipped:', e)
 
