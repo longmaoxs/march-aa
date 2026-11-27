@@ -257,7 +257,7 @@ def extrude(pts2d, z0, z1, kind='body'):
 
 
 def prism(cx, cy, r, z0, z1, n=12, rot=math.pi / 12, kind='body', r_top=None, slim=False):
-    _prev = _PART[0]; part('柱身')
+    _prev = _PART[0]
     rt = r if r_top is None else r_top
     pts = [(cx + r * math.cos(rot + 2 * math.pi * i / n),
             cy + r * math.sin(rot + 2 * math.pi * i / n)) for i in range(n)]
@@ -277,7 +277,7 @@ def prism(cx, cy, r, z0, z1, n=12, rot=math.pi / 12, kind='body', r_top=None, sl
 def column(cx, cy, z0, z1, r=0.13, base=True, kind='body', base_type='fupen',
            shaft='round'):
     """柱 + 柱础。base_type 见 components.md；shaft: round|octagon|square|suo"""
-    _prev = _PART[0]; part('柱础')
+    _prev = _PART[0]; part('柱身')
     if shaft == 'octagon':
         out = prism(cx, cy, r * 1.06, z0, z1, n=8, kind=kind, slim=True)
     elif shaft == 'square':
@@ -289,7 +289,9 @@ def column(cx, cy, z0, z1, r=0.13, base=True, kind='body', base_type='fupen',
     else:
         out = prism(cx, cy, r, z0, z1, n=12, kind=kind, slim=True)
     if not base:
+        _PART[0] = _prev
         return out
+    part('柱础')
     if base_type == 'plain':
         out += box(cx - r * 0.95, cy - r * 0.95, z0, cx + r * 0.95, cy + r * 0.95,
                    z0 + 0.09, kind)
@@ -1168,8 +1170,13 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
     # 带引线的构件：把标记先拖到构件上方，再说避让
     for i, c in enumerate(cals):
         if c.get('lead'):
-            placed[i][1] -= r_mark * 2.6
-    rr = r_mark * 2.35
+            px0, py0 = placed[i]
+            cx0, cy0 = cv.w * 0.5, cv.h * 0.46
+            dx, dy = px0 - cx0, py0 - cy0
+            n = math.hypot(dx, dy) or 1.0
+            placed[i][0] = px0 + dx / n * r_mark * 2.4
+            placed[i][1] = py0 + dy / n * r_mark * 2.4
+    rr = r_mark * 1.25      # 只做轻微避让：宁可挤一点，也不能离开构件
     for _ in range(60):
         moved = False
         for i in range(len(placed)):
@@ -1180,7 +1187,7 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
                 if d < rr:
                     if d < 1e-3:
                         dx, dy, d = 0.0, rr, rr
-                    push = (rr - d) * 0.55
+                    push = (rr - d) * 0.30
                     ux, uy = dx / d, dy / d
                     placed[j][0] += ux * push
                     placed[j][1] += uy * push
@@ -1191,8 +1198,9 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
             break
     for idx, c in enumerate(cals, 1):
         sx, sy = placed[idx - 1]
-        if c.get('lead') or c.get('_pxy'):   # 构件在半透明屋面里：标记外移 + 引线
-            ex, ey = (c['_pxy'] if c.get('_pxy') else ax.pt(c['at']))
+        anchor = list(c['_pxy']) if c.get('_pxy') else list(ax.pt(c['at']))
+        if math.hypot(anchor[0]-sx, anchor[1]-sy) > r_mark * 1.15:   # 被避让挤开 → 画引线指回去
+            ex, ey = anchor
             d = math.hypot(ex - sx, ey - sy)
             if d > 1e-3:
                 ux, uy = (ex - sx) / d, (ey - sy) / d
@@ -1213,8 +1221,11 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
 
 
 _PART_KEYS = (('台基', '台基'), ('踏跺', '台基'), ('踏道', '台基'), ('柱础', '柱础'),
-              ('额枋', '额枋'), ('阑额', '额枋'), ('墙', '墙体'), ('窗', '门窗'), ('门', '门窗'),
-              ('斗拱', '斗拱'), ('铺作', '斗拱'), ('金柱', '柱身'), ('柱', '柱身'),
+              ('直棂窗', '门窗'), ('槛窗', '门窗'), ('支摘窗', '门窗'), ('漏窗', '门窗'),
+              ('窗', '门窗'), ('板门', '门窗'), ('门', '门窗'),
+              ('额枋', '额枋'), ('阑额', '额枋'), ('平板枋', '额枋'),
+              ('斗拱', '斗拱'), ('铺作', '斗拱'),
+              ('墙', '墙体'), ('金柱', '柱身'), ('角柱', '柱身'), ('檐柱', '柱身'), ('柱', '柱身'),
               ('屋面', '屋面'), ('四坡', '屋面'), ('翼角', '屋面'), ('正脊', '正脊'),
               ('鸱尾', '正脊'), ('梁架', '梁架'), ('檩', '梁架'), ('椽', '梁架'),
               ('宝顶', '宝顶'), ('栏杆', '栏杆'), ('拱券', '拱券'))
@@ -1695,6 +1706,7 @@ def build_dian(p):
     br = bool(p.get('brackets', True))
 
     hw, hd = bays * bay / 2.0, dbays * bayd / 2.0
+    xs = [-hw + 2 * hw * i / bays for i in range(bays + 1)]
     f, ln, cal = [], [], []
     ph = float(p.get('plat_h', 0.55))
     _po = float(p.get('plat_out', 0.75))
@@ -1709,7 +1721,7 @@ def build_dian(p):
         f += platform(0, 0, hw + _po, hd + _po, ph, 5, step_style=ss)
     ln += brick_box_sides(-hw - _po, -hd - _po, hw + _po, hd + _po, 0.0, ph)
     cal.append({'at': (hw + 0.9, -1.0, ph * 0.6), 'label': '台基踏跺'})
-    cal.append({'at': (-hw + 0.35, -hd - 0.12, ph + 0.10), 'label': '柱础（' + BASE_NAME.get(cb, '覆盆式') + '）'})
+    cal.append({'at': (xs[1], hd, ph + 0.14), 'label': '柱础（' + BASE_NAME.get(cb, '覆盆式') + '）', 'lead': True})
 
     colh = float(p.get('col_h', 4.10))
     zt = ph + colh
@@ -1836,7 +1848,7 @@ def build_dian(p):
     ip = [(-ihw, -ihd), (ihw, -ihd), (ihw, ihd), (-ihw, ihd)]
     for (x, y) in ip:
         f += column(x, y, ph, z1, 0.17, base_type=cb, shaft=sh)
-    cal.append({'at': (ihw, ihd, z1 - 1.2), 'label': '金柱'})
+    cal.append({'at': (xs[1], hd, ph + colh * 0.55), 'label': '金柱'})
 
     ey = hd + float(p.get('eave_out', 0.18)) * bays * bay
     if style == 'barrel':                       # 卷棚：无正脊的圆脊
@@ -1918,7 +1930,7 @@ def build_dian(p):
             f += beam_ring([(xs[0], hd * 0.55), (xs[-1], hd * 0.55)], zz, zz + 0.13, 0.10)
     else:
         f += truss_frame(xs, hd * 0.90, z1 - 1.05, rr, bw=0.15, apex_of=_apex)
-    cal.append({'at': (xs[len(xs) // 2], -hd * 0.55, z1 - 0.72), 'label': '梁架', 'lead': True})
+    cal.append({'at': (xs[1] + (xs[2]-xs[1])*0.5, -hd * 0.42, z1 - 1.35), 'label': '梁架'})
 
     chain = [(0, 0, rr + 0.38), (0, 0, z1), (0, 0, zt + 0.16), (0, 0, 2.2), (0, 0, 0.55), (0, 0, 0.0)]
     meta = {'span': hw * 2 + 1.1, 'height': rr + 0.5}
