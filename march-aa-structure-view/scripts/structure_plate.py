@@ -2550,7 +2550,7 @@ def render(job):
     y0 = rule_y + int(30 * ts)
     sig = H - int(150 * ts)
     y1 = sig - int(470 * ts)
-    leg_top_y = y1 + int(34 * ts)
+    leg_top_y = y1 + int(150 * ts)
     conv_y = leg_top_y + 2 * row_h + int(26 * ts)
     leg_bottom = leg_top_y + 2 * row_h
     chain_y = leg_bottom + int(30 * ts)
