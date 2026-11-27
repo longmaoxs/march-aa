@@ -2275,20 +2275,18 @@ def render(job):
         maxlab = max(maxlab, cv.dr.textlength(c['label'], font=f_name) / S)
     r_leg = int(24 * ts)
     row_h = int(62 * ts)
-    leg_top_y = rule_y + int(52 * ts)
-    leg_bottom, leg_centers = _legend_strip(cv, cals, f_name, f_num, mx, leg_top_y,
-                                            W - mx - mr, row_h, r_leg, ts, f_hint=f_hint)
-    # 传力路径说明：图例下一行
+    # 图例改到图的下方：先只占位，等版心算完再画
     clabel = model.get('chainLabel')
-    chain_y = leg_bottom + int(46 * ts)
-    if clabel:
-        leg_bottom = chain_y + int(10 * ts)
+    leg_top_y = None
 
     # ── 版心：横向基本用满页宽 ────────────────────────────
     x0, x1 = mx, W - mr
-    y0 = leg_bottom + int(30 * ts)
+    y0 = rule_y + int(46 * ts)
     sig = H - int(150 * ts)
-    y1 = sig - int(172 * ts)
+    y1 = sig - int(340 * ts)
+    leg_top_y = y1 + int(40 * ts)
+    leg_bottom = leg_top_y + 2 * row_h
+    chain_y = leg_bottom + int(30 * ts)
     if y1 - y0 < 400 * ts:
         y1 = H - int(200 * ts)
 
@@ -2397,7 +2395,7 @@ def render(job):
     # ── 比例尺 / 方印 / 注记 ──────────────────────────────
     bl = min(int(540 * ts), (x1 - x0) * 0.32)
     nseg = 4
-    bx, by = mx, sig + int(10 * ts)
+    bx, by = mx, sig + int(78 * ts)
     bh_ = max(6, int(8 * ts))
     for i in range(nseg):
         xx = bx + bl * i / nseg
@@ -2432,7 +2430,7 @@ def render(job):
     cv.text(_Rx - seal - int(20 * ts), sy + seal * 0.76,
             '古建构造关系轴测 · structure view', font('hei', F(26)), INK3, anchor='rm')
     _dl = _dim_line(fam, par)
-    _ty = sig - int(96 * ts)
+    _ty = sig + int(12 * ts)
     if _dl:
         cv.text(mx, _ty, _dl, f_note, INK3, anchor='lm')
         _ty += int(34 * ts)
