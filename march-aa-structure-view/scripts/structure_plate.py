@@ -2456,19 +2456,23 @@ def _rect(cv, x0, y0, x1, y1, fill=None, alpha=255, outline=None, lw=1.0):
     cv.poly([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], fill, outline, lw, alpha)
 
 
+def _photo_ar(path, lo=0.60, hi=2.00):
+    """原图宽高比（横图保持横、竖图保持竖），只做温和夹紧，不裁切。"""
+    try:
+        im = Image.open(path)
+        ar = im.width / float(im.height)
+    except Exception:
+        return 1.0
+    return min(hi, max(lo, ar))
+
+
 def _photo_card(cv, path, x1, y1, h):
     try:
         im = Image.open(path).convert('RGB')
     except Exception:
         return None
-    w = int(h * 0.80)
-    ar = im.width / float(im.height)
-    if ar > 0.80:
-        nw = int(im.height * 0.80)
-        im = im.crop(((im.width - nw) // 2, 0, (im.width + nw) // 2, im.height))
-    else:
-        nh = int(im.width / 0.80)
-        im = im.crop((0, (im.height - nh) // 2, im.width, (im.height + nh) // 2))
+    ar = _photo_ar(path)
+    w = int(h * ar)
     im = im.resize((int(w * S), int(h * S)), Image.LANCZOS)
     cv.img.paste(im, (int((x1 - w) * S), int((y1 - h) * S)))
     _rect(cv, x1 - w, y1 - h, x1, y1, None, 255, INK4, 1.0)
@@ -2653,7 +2657,16 @@ def render(job):
     desc_n = min(3, len(job.get('desc', [])))
     desc_bottom = top + int(168 * ts) + desc_n * int(62 * ts) - int(24 * ts)
     ph = int(min(max(H * 0.132, 250), 460))
-    pw = int(ph * 0.80)
+    _par = _photo_ar(job['photo']) if job.get('photo') else 0.80
+    pw = int(ph * _par)
+    # 不压标题：按标题实际排字宽度收窄，等比缩高
+    _ttw = cv.dr.textlength(job.get('title', ''), font=font('kai', F(124))) / S
+    _stw = cv.dr.textlength(job.get('subtitle', ''), font=font('hei', F(62))) / S
+    _title_right = mx + _ttw + int(26 * ts) + _stw + int(56 * ts)
+    _pw_max = max(int(W * 0.16), W - mr - _title_right)
+    if pw > _pw_max:
+        pw = _pw_max
+        ph = int(pw / _par)
     photo = None
     if job.get('photo'):
         py1 = top + int(6 * ts) + ph
