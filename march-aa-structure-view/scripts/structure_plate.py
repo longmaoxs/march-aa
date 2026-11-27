@@ -1510,6 +1510,10 @@ def build_dian(p):
                      ph, 0.78)
     z1 = zt + _eh
     if br:
+        _ox = hw + _po + 0.30
+        _oy = hd + _po + 0.30
+        f += beam_ring([(-_ox, -_oy), (_ox, -_oy), (_ox, _oy), (-_ox, _oy)],
+                       z1 - 0.34, z1 - 0.18, 0.11)
         mid = [(xs[i] + xs[i + 1]) / 2.0 for i in range(bays)]
         bpts = ([(x, -hd) for x in xs] + [(x, hd) for x in xs]
                 + [(x, -hd) for x in mid] + [(x, hd) for x in mid]
@@ -1527,7 +1531,24 @@ def build_dian(p):
     cal.append({'at': (ihw, ihd, z1 - 1.2), 'label': '金柱'})
 
     ey = hd + float(p.get('eave_out', 0.18)) * bays * bay
-    if style == 'yingshan':
+    if style == 'barrel':                       # 卷棚：无正脊的圆脊
+        ridge = z1 + hd * float(p.get('pitch', 0.52))
+        rf, rl = roof_barrel(-hw - 0.55, hw + 0.55, ey, z1, ridge - z1, seg=10)
+        f += rf
+        ln += rl
+        cal.append({'at': (hw * 0.3, -ey * 0.5, z1 + 0.45), 'label': '卷棚屋面'})
+        rr = ridge
+    elif style == 'luding':                     # 盝顶：四坡收到一圈，顶上平
+        ridge = z1 + ey * float(p.get('pitch', 0.40))
+        _rr = float(p.get('ridge_ratio', 0.30))
+        rf, rl = roof_hip(-hw - 0.55, hw + 0.55, ey, z1, -hw * _rr, hw * _rr, 0.0, ridge, bands=3)
+        f += rf
+        ln += rl
+        f += box(-hw * _rr, -hw * _rr * 0.42, ridge, hw * _rr, hw * _rr * 0.42, ridge + 0.10, 'accent')
+        cal.append({'at': (hw * 0.3, -ey * 0.55, z1 + 0.5), 'label': '盝顶屋面'})
+        cal.append({'at': (0, 0, ridge + 0.30), 'label': '平顶'})
+        rr = ridge + 0.10
+    elif style == 'yingshan':
         ridge = z1 + hd * float(p.get('pitch', 0.62))
         rf, rl = roof_gable(-hw, hw, ey, z1, ridge, bands=4)
         f += rf
@@ -1558,6 +1579,14 @@ def build_dian(p):
         cal.append({'at': (hw - 1.75, 0, z1 + 1.4), 'label': '山花'})
         rr = ridge
 
+    if int(p.get('eaves', 1)) >= 2:             # 重檐：檐下再挑一圈腰檐
+        zw = ph + (zt - ph) * 0.62
+        rf2, rl2 = roof_ring(_square(0, 0, hw + _po + 0.55), zw,
+                             _square(0, 0, hw + _po - 0.10), zw + 0.55, alpha=40)
+        f += rf2
+        ln += rl2
+        cal.append({'at': (hw + _po + 0.30, -hd * 0.5, zw), 'label': '腰檐'})
+
     # 屋架
     _tx = hw * 0.55
     _ey = ey
@@ -1565,7 +1594,14 @@ def build_dian(p):
     def _apex(x):
         u = min(1.0, abs(x) / max(_tx, 1e-6))          # 0 在脊、1 在檐
         return rr - (rr - (z1 + _ey * 0.0)) * (u ** 1.65) * 0.0 - (rr - z1) * (u ** 1.65)
-    f += truss_frame(xs, hd * 0.90, z1 - 1.05, rr, bw=0.15, apex_of=_apex)
+    if str(p.get('truss', 'tailiang')) == 'chuandou':
+        for x in xs:
+            f += column(x, 0.0, ph, rr - 0.15, 0.13, base_type='plain', shaft='round')
+        for zz in (z1 + 0.35, rr - 0.55):
+            f += beam_ring([(xs[0], -hd * 0.55), (xs[-1], -hd * 0.55)], zz, zz + 0.13, 0.10)
+            f += beam_ring([(xs[0], hd * 0.55), (xs[-1], hd * 0.55)], zz, zz + 0.13, 0.10)
+    else:
+        f += truss_frame(xs, hd * 0.90, z1 - 1.05, rr, bw=0.15, apex_of=_apex)
     cal.append({'at': (xs[len(xs) // 2], -hd * 0.55, z1 - 0.72), 'label': '梁架', 'lead': True})
 
     chain = [(0, 0, rr + 0.38), (0, 0, z1), (0, 0, zt + 0.16), (0, 0, 2.2), (0, 0, 0.55), (0, 0, 0.0)]

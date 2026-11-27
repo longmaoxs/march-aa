@@ -1,6 +1,6 @@
 ---
 name: march-aa-structure-view
-version: 0.5.0
+version: 0.6.0
 license: MIT
 project: march-aa
 description: 把一张古建照片/一句形制描述，做成「透明构造关系轴测图」——玻璃罩式的屋面、被遮构件降为浅虚线、朱红传力链，用来讲清古建怎么站住、力怎么传。覆盖亭/廊/殿堂/楼阁/塔/门/桥七类，输出可印刷的矢量风 PNG。

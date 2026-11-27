@@ -4,7 +4,7 @@
 
 <p align="center">
   <b>把一张古建照片，变成一张能讲清「它怎么站住」的透明构造图</b><br>
-  <sub>v0.5 · 参数化矢量 · 不生成 AI 图 · 覆盖 亭 / 廊 / 殿堂 / 楼阁 / 塔 / 门 / 桥</sub>
+  <sub>v0.6 · 参数化矢量 · 不生成 AI 图 · 覆盖 亭 / 廊 / 殿堂 / 楼阁 / 塔 / 门 / 桥</sub>
 </p>
 
 ---
@@ -251,7 +251,7 @@ python scripts/structure_plate.py --json draft.json --out out/x.png
 └── out/                      # 示例成图
 ```
 
-## 现在做到哪了（v0.5）
+## 现在做到哪了（v0.6）
 
 **能用的**：七类形制都能出图；轴测与正立面两种视角；构件编号 + 作用注 + 传力链 + 画法图例 +
 比例尺 + 尺寸注记；4 种画幅（3:4 / 1:1 / 4:3 / 9:16）；照片→形制的前五步。
@@ -270,7 +270,7 @@ python scripts/structure_plate.py --json draft.json --out out/x.png
 
 | 技能 | 做什么 | 状态 |
 |---|---|---|
-| `march-aa-structure-view` | 透明构造关系图（本仓库） | v0.5 |
+| `march-aa-structure-view` | 透明构造关系图（本仓库） | v0.6 |
 | `march-aa-exploded-plate` | 分层爆炸图 | v1.1 |
 
 ## 许可

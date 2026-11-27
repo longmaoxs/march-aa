@@ -1,0 +1,37 @@
+{
+ "family": "dian",
+ "ratio": "3:4",
+ "photo": "/tmp/hall.jpg",
+ "title": "三间盝顶殿堂",
+ "subtitle": "· 构造关系轴测",
+ "desc": [
+  "四坡收到一圈，顶上覆平顶。",
+  "元代以前多见，明以后少见。"
+ ],
+ "params": {
+  "style": "luding",
+  "bays": 3,
+  "bay": 4.0,
+  "depth_bays": 3,
+  "bayd": 3.6,
+  "brackets": true,
+  "col_h": 4.6,
+  "bracket_h": 0.44,
+  "eave_out": 0.11,
+  "plat_h": 1.15,
+  "components": {
+   "column_base": "fupen",
+   "bracket": "touxin",
+   "ridge_orn": "chiwei",
+   "column_shaft": "suo",
+   "arch_beam": "lan_e",
+   "steps": "chuídai",
+   "window": "zhiling",
+   "platform_base": "plain",
+   "railing": "none"
+  },
+  "ridge_ratio": 0.3
+ },
+ "view": "axo",
+ "z_ratio": 0.82
+}
