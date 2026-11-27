@@ -36,6 +36,7 @@ DIAN_LIST = [
     ('台基', '台基 · 踏道', '素台基 · 5 级踏道', '石作基础。把建筑抬离地面，收住全部竖向荷载，也划出建筑的边界。'),
     ('柱础', '柱础', '覆盆式', '圆盆倒扣护住柱脚：隔潮、找平，把柱子的压力摊到台基上。'),
     ('柱身', '柱身', '梭柱（唐）', '上细下粗、卷杀收分。柱径与柱高之比，是判断年代的第一眼。'),
+    ('门窗', '门窗', '直棂窗 · 板门', '墙身开洞：当心间设板门、两梢间开直棂窗。门窗只作围护，不参与承重。'),
     ('额枋', '额枋', '阑额（唐）', '柱头的横向联系，把一圈柱子连成整体，也是斗拱的落脚处。'),
     ('斗拱', '斗拱', '偷心造 · 柱头铺作', '斗上叠拱、逐层出跳。出跳越多、层数越高，等级越高；荷载在这里被收拢。'),
     ('补间', '补间铺作', '一朵（唐）', '两柱之间的一朵，唐构补间少而雄大，与柱头铺作共同承檐。'),
@@ -87,6 +88,7 @@ def anchors(p, model):
         '台基': (xs[len(xs)//2], hd * 0.75, ph * 0.55),
         '柱础': (x_in, hd, ph + 0.10),
         '柱身': (x_in, hd, ph + colh * 0.55),
+        '门窗': (x_in, -hd, ph + colh * 0.42),
         '额枋': (x_in, hd, zt + eh * 0.5),
         '斗拱': (x_in, hd, zt + eh + bh * 0.55),
         '补间': (x_in + bay * 0.5, hd, zt + eh + bh * 0.55),
@@ -189,26 +191,32 @@ def main():
         lst = [it for it in lst if it[0] in want]
     amap = anchors(p, model)
 
-    f_no = SP.font('num', F(28))
-    f_nm = SP.font('hei', F(40))
-    f_ty = SP.font('hei', F(27))
-    f_ft = SP.font('hei', F(25))
+    f_no = SP.font('num', F(32))
+    f_nm = SP.font('hei', F(46))
+    f_ty = SP.font('hei', F(31))
+    f_ft = SP.font('hei', F(29))
 
-    # 锚点编号徽标
+    # 锚点编号徽标（相互避让）
+    placed = []
     for idx, (key, name, typ, feat) in enumerate(lst):
         at = amap.get(key)
         if not at:
             continue
         px, py = ax.pt(at)
-        r = int(19 * ts)
+        r = int(26 * ts)
+        for _ in range(6):
+            if all(abs(px - qx) > 2.2 * r or abs(py - qy) > 2.2 * r for qx, qy in placed):
+                break
+            py -= int(50 * ts)
+        placed.append((px, py))
         cv.poly([(px - r, py - r), (px + r, py - r), (px + r, py + r), (px - r, py + r)],
                 fill=(250, 247, 242), outline=ACCENT, lw=1.4)
-        cv.text(px, py, '%02d' % (idx + 1), SP.font('num', F(24)), ACCENT, anchor='mm')
+        cv.text(px, py, '%02d' % (idx + 1), SP.font('num', F(30)), ACCENT, anchor='mm')
 
     # 双栏文字
     col_w = (W - 2 * int(56 * ts) - int(60 * ts)) // 2
-    top = int(H * 0.60)
-    rows = 5
+    top = int(H * 0.595)
+    rows = (len(lst) + 1) // 2
     step = (H - int(96 * ts) - top) / float(rows)
     for idx, (key, name, typ, feat) in enumerate(lst):
         col, row = idx // rows, idx % rows
