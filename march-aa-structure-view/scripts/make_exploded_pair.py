@@ -143,7 +143,7 @@ def main():
     summary = job.get('styleNote') or '斗拱雄大、出檐深远、屋面平缓——唐构的三件事，都写在剖开的这四层里。'
 
     # ── 右栏：先量后画，整块垂直居中，不同条目间留适度间距
-    seal = int(92 * ts)
+    seal = int(120 * ts)
     LH = int(40 * ts)                     # 行距
     GAP = int(58 * ts)                    # 条目间距
     th = int(132 * ts)
@@ -160,20 +160,20 @@ def main():
         blocks.append((no, hd, ls[:5]))
 
     top_pad = int(28 * ts)
-    head_h = int(64 * ts) + int(46 * ts) + len(head_lines) * LH + int(30 * ts) + int(18 * ts)
+    head_h = int(78 * ts) + int(56 * ts) + len(head_lines) * LH + int(70 * ts) + int(18 * ts)
     ents_h = sum(max(th, int(64 * ts) + len(ls) * LH) for _, _, ls in blocks) + GAP * (len(blocks) - 1)
-    total = top_pad + head_h + ents_h + int(26 * ts) + seal
+    total = top_pad + head_h + ents_h + int(120 * ts) + seal
 
     avail = H - TOP - int(60 * ts)
     y = TOP + int(48 * ts) + max(0, (avail - total) // 2)
 
-    cv.text(nx, y, era or '构造关系', f_era, SP.INK, anchor='lm'); y += int(64 * ts)
-    cv.text(nx, y, style_line, f_sub, SP.ACCENT, anchor='lm'); y += int(46 * ts)
+    cv.text(nx, y, era or '构造关系', f_era, SP.INK, anchor='lm'); y += int(78 * ts)
+    cv.text(nx, y, style_line, f_sub, SP.ACCENT, anchor='lm'); y += int(56 * ts)
     for line in head_lines:
         cv.text(nx, y, line, f_note, SP.INK3, anchor='lm'); y += LH
     y += int(24 * ts)
     cv.line([(nx, y), (nx + nw, y)], SP.INK4, 1.4)
-    y += int(30 * ts)
+    y += int(70 * ts)   # 标题区与 01 之间留大空
 
     for i, (no, hd, ls) in enumerate(blocks):
         m1 = dict(model, faces=bands[notes_top_index[i]], lines=lbands[notes_top_index[i]],
@@ -195,7 +195,7 @@ def main():
             cv.text(tx, yy, line, f_note, SP.INK3, anchor='lm'); yy += LH
         y += max(th, yy - y) + GAP
 
-    lg_y = y - GAP + int(46 * ts)          # logo 紧接条目，不压到底边
+    lg_y = y - GAP + int(120 * ts)         # logo 与末条拉开，但不贴底
     try:
         mk = Image.open(str(Path(__file__).resolve().parent.parent /
                             'assets/brand/mark.png')).convert('RGBA')
