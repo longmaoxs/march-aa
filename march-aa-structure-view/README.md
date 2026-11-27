@@ -332,8 +332,15 @@ python scripts/structure_plate.py --json draft.json --out out/x.png
 | | `zhengwen` 正吻 ✅ | 龙形，尾外卷，**背插剑把** | 明清 |
 | **steps** 踏道 | `chuídai` 垂带踏跺 ✅ | 两侧斜垂带 | 各代 |
 | | `yulu` 御路 ✅ | 中间加一整条斜石 | 明清宫殿 |
+| **platform_base** 台基 | `plain` 素台基 | 一整块方台 + 踏跺 | 各代 |
+| | `xumizuo` 须弥座 ✅ | 上下叠涩 + **中段内收的束腰** | 高等级建筑 |
+| **railing** 栏杆 | `none` | 不画 | — |
+| | `shilan` 石栏杆 ✅ | 望柱 + 上枋 + 下枋 + 栏板，**踏道处断开** | 明清宫殿、庙宇 |
+| **window** 窗 | `zhiling` 直棂窗 ✅ | 一排竖向棂条，无格心 | 唐宋 |
+| | `jian` 槛窗 ✅ | 上半为格心（横竖格），下有槛墙 | 宋—清 |
+| | `zhizhai` 支摘窗 ✅ | 上大下小两段，上段可支起 | 明清住宅 |
 
-✅ = 已实现几何；其余见 `references/components.md`。
+✅ = 已实现几何；其余见 `references/components.md`。换 `window` 时，页首说明里的「直棂窗」会自动改成「槛窗 / 支摘窗」。
 
 **还没实现的**：屋顶形式只覆盖庑殿 / 歇山 / 悬山 / 攒尖，
 卷棚、盝顶、十字歇山、重檐组合、须弥座台基、门窗细样（直棂窗之外的槛窗/支摘窗）

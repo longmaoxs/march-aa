@@ -25,7 +25,10 @@
    "ridge_orn": "chiwen",
    "column_shaft": "round",
    "arch_beam": "lan_e_pupai",
-   "steps": "chuídai"
+   "steps": "chuídai",
+   "window": "jian",
+   "platform_base": "xumizuo",
+   "railing": "shilan"
   }
  },
  "view": "axo",

@@ -385,6 +385,25 @@ def efang_set(pts2d, zt, eh, style='lan_e_pupai', kind='body'):
     return out
 
 
+def railing(pts2d, z0, h=0.75, n=None, kind='body'):
+    out = []
+    for i in range(len(pts2d)):
+        a, b = pts2d[i], pts2d[(i + 1) % len(pts2d)]
+        L = ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5
+        if L < 0.2:
+            continue
+        m = n or max(2, int(L / 1.6) + 1)
+        for k in range(m + 1):
+            t = k / float(m)
+            x, y = a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t
+            out += box(x - 0.10, y - 0.10, z0, x + 0.10, y + 0.10, z0 + h, kind)
+        out += box(min(a[0], b[0]) - 0.06, min(a[1], b[1]) - 0.06, z0 + h * 0.92,
+                   max(a[0], b[0]) + 0.06, max(a[1], b[1]) + 0.06, z0 + h, kind)
+        out += box(min(a[0], b[0]) - 0.06, min(a[1], b[1]) - 0.06, z0 + 0.10,
+                   max(a[0], b[0]) + 0.06, max(a[1], b[1]) + 0.06, z0 + h * 0.26, kind)
+    return out
+
+
 def beam_ring(pts2d, z0, z1, w=0.09, kind='body'):
     """沿多边形顶点依次连梁（额枋）。"""
     out = []
@@ -1408,6 +1427,9 @@ def build_dian(p):
     sh = str(p.get('components', {}).get('column_shaft', 'round'))
     ab = str(p.get('components', {}).get('arch_beam', 'lan_e_pupai'))
     ss = str(p.get('components', {}).get('steps', 'chuídai'))
+    win = str(p.get('components', {}).get('window', 'zhiling'))
+    pb = str(p.get('components', {}).get('platform_base', 'plain'))
+    rl = str(p.get('components', {}).get('railing', 'none'))
     bays = int(p.get('bays', 5))
     bay = float(p.get('bay', 3.6))
     dbays = int(p.get('depth_bays', 3))
@@ -1418,7 +1440,15 @@ def build_dian(p):
     f, ln, cal = [], [], []
     ph = float(p.get('plat_h', 0.55))
     _po = float(p.get('plat_out', 0.75))
-    f += platform(0, 0, hw + _po, hd + _po, ph, 5, step_style=ss)
+    if pb == 'xumizuo':
+        b = ph / 5.0
+        f += box(-(hw + _po), -(hd + _po), 0.0, hw + _po, hd + _po, b, 'mass')
+        f += box(-(hw + _po) + 0.12, -(hd + _po) + 0.12, b, hw + _po - 0.12, hd + _po - 0.12, b * 2, 'mass')
+        f += box(-(hw + _po) + 0.36, -(hd + _po) + 0.36, b * 2, hw + _po - 0.36, hd + _po - 0.36, b * 3, 'mass')
+        f += box(-(hw + _po) + 0.12, -(hd + _po) + 0.12, b * 3, hw + _po - 0.12, hd + _po - 0.12, b * 4, 'mass')
+        f += box(-(hw + _po), -(hd + _po), b * 4, hw + _po, hd + _po, ph, 'mass')
+    else:
+        f += platform(0, 0, hw + _po, hd + _po, ph, 5, step_style=ss)
     ln += brick_box_sides(-hw - _po, -hd - _po, hw + _po, hd + _po, 0.0, ph)
     cal.append({'at': (hw + 0.9, -1.0, ph * 0.6), 'label': '台基踏跺'})
     cal.append({'at': (-hw + 0.35, -hd - 0.12, ph + 0.10), 'label': '柱础（' + BASE_NAME.get(cb, '覆盆式') + '）'})
@@ -1454,10 +1484,30 @@ def build_dian(p):
             wz0, wz1 = ph + 1.20, zt - 0.70
             f.append(_F(((wx0, yf, wz0), (wx1, yf, wz0), (wx1, yf, wz1), (wx0, yf, wz1)),
                         'mass', alpha=200, edge=0.9, edge_color=INK3, fill=(214, 208, 196)))
-            for k in range(1, 9):            # 直棂竖条
-                xx = wx0 + (wx1 - wx0) * k / 9.0
-                ln.append((((xx, yf, wz0 + 0.05), (xx, yf, wz1 - 0.05)), INK3, 0.8, None))
+            if win == 'jian':
+                zz = wz0 + (wz1 - wz0) * 0.35
+                ln.append((((wx0, yf, zz), (wx1, yf, zz)), INK3, 1.1, None))
+                ln.append((((wx0, yf, zz + (wz1 - zz) * 0.5), (wx1, yf, zz + (wz1 - zz) * 0.5)), INK3, 0.8, None))
+                for k in range(1, 5):
+                    xx = wx0 + (wx1 - wx0) * k / 5.0
+                    ln.append((((xx, yf, zz), (xx, yf, wz1)), INK3, 0.8, None))
+                    ln.append((((xx, yf, wz0), (xx, yf, zz)), INK3, 0.6, None))
+            elif win == 'zhizhai':
+                zz = wz0 + (wz1 - wz0) * 0.55
+                ln.append((((wx0, yf, zz), (wx1, yf, zz)), INK3, 1.3, None))
+                for k in range(1, 4):
+                    xx = wx0 + (wx1 - wx0) * k / 4.0
+                    ln.append((((xx, yf, zz), (xx, yf, wz1)), INK3, 0.9, None))
+                    ln.append((((xx, yf, wz0), (xx, yf, zz)), INK3, 0.6, None))
+            else:
+                for k in range(1, 9):
+                    xx = wx0 + (wx1 - wx0) * k / 9.0
+                    ln.append((((xx, yf, wz0 + 0.05), (xx, yf, wz1 - 0.05)), INK3, 0.8, None))
 
+    if rl != 'none':
+        f += railing([(-hw - _po + 0.18, -hd - _po + 0.18), (hw + _po - 0.18, -hd - _po + 0.18),
+                      (hw + _po - 0.18, hd + _po - 0.18), (-hw - _po + 0.18, hd + _po - 0.18)],
+                     ph, 0.78)
     z1 = zt + _eh
     if br:
         mid = [(xs[i] + xs[i + 1]) / 2.0 for i in range(bays)]
@@ -2139,7 +2189,14 @@ def render(job):
     avail = W - mr - tx
     if job.get('photo'):
         avail = (W - mr - int(ph * 0.8)) - tx - int(36 * ts)
-    for raw in job.get('desc', [])[:3]:
+    _comp = (job.get('params') or {}).get('components') or {}
+    _w = str(_comp.get('window', 'zhiling'))
+    _dlist = list(job.get('desc', [])[:3])
+    if _w == 'jian':
+        _dlist = [l.replace('直棂窗', '槛窗') for l in _dlist]
+    elif _w == 'zhizhai':
+        _dlist = [l.replace('直棂窗', '支摘窗') for l in _dlist]
+    for raw in _dlist:
         for line in _wrap(cv, raw, f_desc, avail):
             cv.text(tx, yy, line, f_desc, INK2)
             yy += int(62 * ts)

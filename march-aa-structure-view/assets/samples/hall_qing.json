@@ -25,7 +25,10 @@
    "ridge_orn": "zhengwen",
    "column_shaft": "round",
    "arch_beam": "e_fang",
-   "steps": "yulu"
+   "steps": "yulu",
+   "window": "zhizhai",
+   "platform_base": "xumizuo",
+   "railing": "shilan"
   }
  },
  "view": "axo",

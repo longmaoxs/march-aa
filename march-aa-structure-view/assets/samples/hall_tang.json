@@ -25,7 +25,10 @@
    "ridge_orn": "chiwei",
    "column_shaft": "suo",
    "arch_beam": "lan_e",
-   "steps": "chuídai"
+   "steps": "chuídai",
+   "window": "zhiling",
+   "platform_base": "plain",
+   "railing": "none"
   }
  },
  "view": "axo",
