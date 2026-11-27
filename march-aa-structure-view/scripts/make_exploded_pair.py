@@ -73,8 +73,9 @@ def main():
     _r = max(W / _ph.width, TOP / _ph.height)
     _pc = _ph.resize((max(W, int(_ph.width * _r)), max(TOP, int(_ph.height * _r))), Image.LANCZOS)
     _x = (_pc.width - W) // 2
-    _y = int((_pc.height - TOP) * 0.30)
-    cv.img.paste(_pc.crop((_x, _y, _x + W, _y + TOP)), (0, 0))
+    _y = int((_pc.height - TOP) * 0.58)
+    _band = _pc.crop((max(0, _x), max(0, _y), max(0, _x) + W, max(0, _y) + TOP)).convert('RGB')
+    cv.img.paste(_band, (0, 0))
     # 下带：爆炸主体
     model2 = dict(model, faces=ex_f, lines=ex_l, callouts=[], chain=[])
     mx, my = int(70 * ts), int(40 * ts)
