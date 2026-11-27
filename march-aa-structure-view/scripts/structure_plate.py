@@ -1158,8 +1158,12 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
             hit = _anchor_for(model, c['at'])
             if hit:
                 c['at'] = hit
-    cals.sort(key=lambda c: -ax.pt(c['at'])[1])
-    placed = [list(ax.pt(c['at'])) for c in cals]
+    def _pp(c):
+        if c.get('_pxy'):
+            return list(c['_pxy'])
+        return list(ax.pt(c['at']))
+    cals.sort(key=lambda c: -_pp(c)[1])
+    placed = [_pp(c) for c in cals]
     # 带引线的构件：把标记先拖到构件上方，再说避让
     for i, c in enumerate(cals):
         if c.get('lead'):
@@ -1186,8 +1190,8 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
             break
     for idx, c in enumerate(cals, 1):
         sx, sy = placed[idx - 1]
-        if c.get('lead'):                    # 构件在半透明屋面里：标记外移 + 引线
-            ex, ey = ax.pt(c['at'])
+        if c.get('lead') or c.get('_pxy'):   # 构件在半透明屋面里：标记外移 + 引线
+            ex, ey = (c['_pxy'] if c.get('_pxy') else ax.pt(c['at']))
             d = math.hypot(ex - sx, ey - sy)
             if d > 1e-3:
                 ux, uy = (ex - sx) / d, (ey - sy) / d
@@ -1243,6 +1247,62 @@ def _anchor_for(model, at):
         if d < bd:
             bd, best = d, (cx_, cy_, cz_)
     return best
+
+
+
+
+def _id_map(model, ax, W, H, sc=0.3):
+    """按画家顺序把每个面画进 id 图：像素值 = 面序号+1，最终留下的是真正可见的面。"""
+    from PIL import Image as _I, ImageDraw as _D
+    w, h = max(32, int(W * sc)), max(32, int(H * sc))
+    im = _I.new('I', (w, h), 0)
+    dr = _D.Draw(im)
+    order = []
+    for idx, fac in enumerate(model.get('faces', [])):
+        quad, kind, meta = _fs(fac)
+        pts2 = [ax.pt(q) for q in quad]
+        area = 0.0
+        for i2 in range(len(pts2)):
+            x0, y0 = pts2[i2]
+            x1, y1 = pts2[(i2 + 1) % len(pts2)]
+            area += x0 * y1 - x1 * y0
+        if abs(area * 0.5) < 0.8:
+            continue
+        if kind == 'accent':          # 屋面是玻璃罩，不作为遮挡体参与 id 图
+            continue
+        depth = sum(q[0] + q[1] + q[2] for q in quad) / float(len(quad))
+        order.append((depth, idx, pts2, kind, meta))
+    order.sort(key=lambda t: t[0])
+    for depth, idx, pts2, kind, meta in order:
+        n = meta.get('n')
+        if kind == 'body' and n and (n[0] * VIEW[0] + n[1] * VIEW[1] + n[2] * VIEW[2]) < -0.02:
+            continue
+        dr.polygon([(x * sc, y * sc) for x, y in pts2], fill=idx + 1)
+    return im, sc
+
+
+def _part_anchor(model, ax, W, H, part_name):
+    """该构件在画面上真正可见像素的重心（逻辑坐标）；完全被挡则返回 None。"""
+    im, sc = _id_map(model, ax, W, H)
+    want = set()
+    for idx, fac in enumerate(model.get('faces', [])):
+        if _fs(fac)[2].get('part') == part_name:
+            want.add(idx + 1)
+    if not want:
+        return None
+    px = im.load()
+    w, h = im.size
+    xs = ys = n = 0
+    for y in range(h):
+        row = [px[x, y] for x in range(w)]
+        for x, v in enumerate(row):
+            if v in want:
+                xs += x
+                ys += y
+                n += 1
+    if n < 12:
+        return None
+    return (xs / float(n) / sc, ys / float(n) / sc, n)
 
 
 def _snap_visible(model, p, reach=3.2):
