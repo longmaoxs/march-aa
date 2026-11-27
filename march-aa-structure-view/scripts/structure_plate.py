@@ -1201,7 +1201,10 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
             break
     for idx, c in enumerate(cals, 1):
         sx, sy = placed[idx - 1]
-        anchor = list(c['_pxy']) if c.get('_pxy') else list(ax.pt(c['at']))
+        if c.get('xy'):
+            anchor = [sx, sy]            # 人工指定坐标：徽标就压在构件上，不画引线
+        else:
+            anchor = list(c['_pxy']) if c.get('_pxy') else list(ax.pt(c['at']))
         if math.hypot(anchor[0]-sx, anchor[1]-sy) > r_mark * 1.15:   # 被避让挤开 → 画引线指回去
             ex, ey = anchor
             d = math.hypot(ex - sx, ey - sy)
