@@ -1001,7 +1001,10 @@ def draw_model(cv, model, ax):
         depth = sum(p[0] + p[1] + p[2] for p in quad) / float(len(quad))
         items.append((depth, pts2, kind, meta))
         if meta.get('edge', 1) != 0.0:                 # 棱边（slim 柱身不描内缝）
-            ew_ = meta.get('edge') or 0.9
+            # 按面角色给默认线重：骨（body）/ 皮（mass、screen）/ 饰（accent）
+            _dw = {'body': 1.30, 'mass': 0.88, 'screen': 0.80,
+                   'accent': 0.70, 'fill': 0.70}.get(kind, 0.95)
+            ew_ = meta.get('edge') or _dw
             for i2 in range(len(quad)):
                 a3 = quad[i2]
                 b3 = quad[(i2 + 1) % len(quad)]
@@ -1048,10 +1051,22 @@ def _line_parts(e):
     return (e[0], e[1]), e[2], e[3], (e[4] if len(e) > 4 else None)
 
 
+# 三档线重：骨（柱梁斗拱）/ 皮（墙面门窗台基）/ 饰（瓦垄脊饰门钉天花）
+_TIER = ((1.20, 1.30), (0.95, 1.00), (0.75, 0.85), (0.60, 0.65), (0.0, 0.50))
+
+
+def _tier_w(w):
+    for lo, nw in _TIER:
+        if w >= lo:
+            return nw
+    return w
+
+
 def _draw_seg(cv, seg, ax, buf, sc, col, w, key):
     if key:
         cv.line([ax.pt(seg[0]), ax.pt(seg[1])], col, w)
         return
+    w = _tier_w(w)
     for pts, vis in _runs(seg[0], seg[1], ax, buf, sc):
         if len(pts) < 2:
             continue
