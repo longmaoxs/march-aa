@@ -260,9 +260,19 @@ def prism(cx, cy, r, z0, z1, n=12, rot=math.pi / 12, kind='body', r_top=None, sl
     return out
 
 
-def column(cx, cy, z0, z1, r=0.13, base=True, kind='body', base_type='fupen'):
-    """柱 + 柱础。base_type: plain|fupen|lianban|drum|xumizuo"""
-    out = prism(cx, cy, r, z0, z1, n=12, kind=kind, slim=True)
+def column(cx, cy, z0, z1, r=0.13, base=True, kind='body', base_type='fupen',
+           shaft='round'):
+    """柱 + 柱础。base_type 见 components.md；shaft: round|octagon|square|suo"""
+    if shaft == 'octagon':
+        out = prism(cx, cy, r * 1.06, z0, z1, n=8, kind=kind, slim=True)
+    elif shaft == 'square':
+        out = prism(cx, cy, r * 1.18, z0, z1, n=4, kind=kind, slim=True)
+    elif shaft == 'suo':          # 梭柱：下粗上细，中段略鼓
+        zb = z0 + (z1 - z0) * 0.42
+        out = prism(cx, cy, r * 1.07, z0, zb, n=12, kind=kind, slim=True)
+        out += prism(cx, cy, r * 0.99, zb, z1, n=12, kind=kind, slim=True)
+    else:
+        out = prism(cx, cy, r, z0, z1, n=12, kind=kind, slim=True)
     if not base:
         return out
     if base_type == 'plain':
@@ -341,7 +351,8 @@ def _perimeter(half, cps=2):
     return out
 
 
-def platform(cx, cy, hx, hy, h=0.45, steps=3, kind='mass', front='+y'):
+def platform(cx, cy, hx, hy, h=0.45, steps=3, kind='mass', front='+y',
+             step_style='chuídai'):
     """台基：一块方台 + 正面中点的踏跺（front 指定朝 +x / +y）。"""
     out = box(cx - hx, cy - hy, 0.0, cx + hx, cy + hy, h, kind)
     sw = min((hx if front == '+y' else hy) * 0.62, 1.35)
@@ -349,11 +360,28 @@ def platform(cx, cy, hx, hy, h=0.45, steps=3, kind='mass', front='+y'):
         zz = h - h * (i + 1) / float(steps)
         t0 = 0.15 + 0.34 * i
         if front == '+y':
-            out += box(cx - sw + i * 0.10, cy + hy + t0, 0.0,
-                       cx + sw - i * 0.10, cy + hy + t0 + 0.34, zz + 0.02, kind)
+            wdt = sw - i * (0.10 if step_style == 'chuídai' else 0.16)
+            out += box(cx - wdt, cy + hy + t0, 0.0, cx + wdt, cy + hy + t0 + 0.34,
+                       zz + 0.02, kind)
+            if step_style == 'yulu':      # 御路：中间一整条斜石
+                out += box(cx - 0.62, cy + hy + t0, zz + 0.02,
+                           cx + 0.62, cy + hy + t0 + 0.34, zz + 0.10, kind)
         else:
             out += box(cx + hx + t0, cy - sw + i * 0.10, 0.0,
                        cx + hx + t0 + 0.34, cy + sw - i * 0.10, zz + 0.02, kind)
+    return out
+
+
+def efang_set(pts2d, zt, eh, style='lan_e_pupai', kind='body'):
+    """额枋体系。style: lan_e(只阑额)|lan_e_pupai(阑额+普拍枋)|e_fang(额枋+由额)|di_fu(加地栿)"""
+    out = beam_ring(pts2d, zt, zt + eh, 0.12, kind)
+    if style == 'lan_e_pupai':
+        out += beam_ring(pts2d, zt + eh, zt + eh + 0.10, 0.17, kind)   # 普拍枋：更宽更扁
+    elif style == 'e_fang':
+        out += beam_ring(pts2d, zt - 0.30, zt - 0.12, 0.10, kind)     # 由额
+        out += beam_ring(pts2d, zt + eh, zt + eh + 0.09, 0.15, kind)
+    if style == 'di_fu':
+        out += beam_ring(pts2d, zt - 0.55, zt - 0.45, 0.09, kind)     # 地栿
     return out
 
 
@@ -1377,6 +1405,9 @@ def build_dian(p):
     cb = str(p.get('components', {}).get('column_base', 'fupen'))
     bk = str(p.get('components', {}).get('bracket', 'jixin'))
     ro = str(p.get('components', {}).get('ridge_orn', 'chiwei'))
+    sh = str(p.get('components', {}).get('column_shaft', 'round'))
+    ab = str(p.get('components', {}).get('arch_beam', 'lan_e_pupai'))
+    ss = str(p.get('components', {}).get('steps', 'chuídai'))
     bays = int(p.get('bays', 5))
     bay = float(p.get('bay', 3.6))
     dbays = int(p.get('depth_bays', 3))
@@ -1387,7 +1418,7 @@ def build_dian(p):
     f, ln, cal = [], [], []
     ph = float(p.get('plat_h', 0.55))
     _po = float(p.get('plat_out', 0.75))
-    f += platform(0, 0, hw + _po, hd + _po, ph, 5)
+    f += platform(0, 0, hw + _po, hd + _po, ph, 5, step_style=ss)
     ln += brick_box_sides(-hw - _po, -hd - _po, hw + _po, hd + _po, 0.0, ph)
     cal.append({'at': (hw + 0.9, -1.0, ph * 0.6), 'label': '台基踏跺'})
     cal.append({'at': (-hw + 0.35, -hd - 0.12, ph + 0.10), 'label': '柱础（' + BASE_NAME.get(cb, '覆盆式') + '）'})
@@ -1398,12 +1429,12 @@ def build_dian(p):
     ring = [(-hw, -hd), (hw, -hd), (hw, hd), (-hw, hd)]
     for x in xs:
         for y in (-hd, hd):
-            f += column(x, y, ph, zt, 0.16, base_type=cb)
+            f += column(x, y, ph, zt, 0.16, base_type=cb, shaft=sh)
     for y in (-hd, hd):
-        f += column(-hw, y, ph, zt, 0.16, base_type=cb)
-        f += column(hw, y, ph, zt, 0.16, base_type=cb)
+        f += column(-hw, y, ph, zt, 0.16, base_type=cb, shaft=sh)
+        f += column(hw, y, ph, zt, 0.16, base_type=cb, shaft=sh)
     _eh = float(p.get('efang_h', 0.32))
-    f += beam_ring(ring, zt, zt + _eh, 0.12)
+    f += efang_set(ring, zt, _eh, ab)
     wf, wl = wall_ring(ring, ph, zt, sill=0.52, step=0.30)
     f += wf
     ln += wl
@@ -1442,7 +1473,7 @@ def build_dian(p):
     ihw, ihd = hw - bay, hd - bayd * 0.5
     ip = [(-ihw, -ihd), (ihw, -ihd), (ihw, ihd), (-ihw, ihd)]
     for (x, y) in ip:
-        f += column(x, y, ph, z1, 0.17, base_type=cb)
+        f += column(x, y, ph, z1, 0.17, base_type=cb, shaft=sh)
     cal.append({'at': (ihw, ihd, z1 - 1.2), 'label': '金柱'})
 
     ey = hd + float(p.get('eave_out', 0.18)) * bays * bay

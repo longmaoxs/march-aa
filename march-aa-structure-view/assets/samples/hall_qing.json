@@ -22,7 +22,10 @@
   "components": {
    "column_base": "drum",
    "bracket": "jixin",
-   "ridge_orn": "zhengwen"
+   "ridge_orn": "zhengwen",
+   "column_shaft": "round",
+   "arch_beam": "e_fang",
+   "steps": "yulu"
   }
  },
  "view": "axo",

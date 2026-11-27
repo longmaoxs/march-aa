@@ -22,7 +22,10 @@
   "components": {
    "column_base": "fupen",
    "bracket": "touxin",
-   "ridge_orn": "chiwei"
+   "ridge_orn": "chiwei",
+   "column_shaft": "suo",
+   "arch_beam": "lan_e",
+   "steps": "chuídai"
   }
  },
  "view": "axo",

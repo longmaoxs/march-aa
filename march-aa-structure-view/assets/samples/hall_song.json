@@ -22,7 +22,10 @@
   "components": {
    "column_base": "lianban",
    "bracket": "jixin",
-   "ridge_orn": "chiwen"
+   "ridge_orn": "chiwen",
+   "column_shaft": "round",
+   "arch_beam": "lan_e_pupai",
+   "steps": "chuídai"
   }
  },
  "view": "axo",
