@@ -75,7 +75,8 @@ def main():
     _x = (_pc.width - W) // 2
     _y = int((_pc.height - TOP) * 0.58)
     _band = _pc.crop((max(0, _x), max(0, _y), max(0, _x) + W, max(0, _y) + TOP)).convert('RGB')
-    cv.img.paste(_band, (0, 0))
+    _S = cv.img.width / float(cv.w)
+    cv.img.paste(_band.resize((int(W * _S), int(TOP * _S)), Image.LANCZOS), (0, 0))
     # 下带：爆炸主体
     model2 = dict(model, faces=ex_f, lines=ex_l, callouts=[], chain=[])
     mx, my = int(70 * ts), int(40 * ts)
