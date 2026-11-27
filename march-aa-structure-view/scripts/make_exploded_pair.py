@@ -143,7 +143,7 @@ def main():
     summary = job.get('styleNote') or '斗拱雄大、出檐深远、屋面平缓——唐构的三件事，都写在剖开的这四层里。'
 
     # ── 右栏：先量后画，整块垂直居中，不同条目间留适度间距
-    seal = int(140 * ts)
+    seal = int(104 * ts)
     LH = int(40 * ts)                     # 行距
     GAP = int(68 * ts)                    # 条目间距
     th = int(132 * ts)
@@ -162,7 +162,7 @@ def main():
     top_pad = int(28 * ts)
     head_h = int(96 * ts) + int(56 * ts) + len(head_lines) * LH + int(92 * ts) + int(18 * ts)
     ents_h = sum(max(th, int(64 * ts) + len(ls) * LH) for _, _, ls in blocks) + GAP * (len(blocks) - 1)
-    total = top_pad + head_h + ents_h + int(104 * ts) + seal
+    total = top_pad + head_h + ents_h + int(200 * ts) + seal
 
     avail = H - TOP - int(60 * ts)
     y = TOP + int(48 * ts) + max(0, (avail - total) // 2)
@@ -196,7 +196,7 @@ def main():
             cv.text(tx, yy, line, f_note, SP.INK3, anchor='lm'); yy += LH
         y += max(th, yy - y) + GAP
 
-    lg_y = y - GAP + int(104 * ts)         # logo 与末条拉开，但不贴底
+    lg_y = y - GAP + int(200 * ts)         # logo 与末条拉开，但不贴底
     try:
         mk = Image.open(str(Path(__file__).resolve().parent.parent /
                             'assets/brand/mark.png')).convert('RGBA')
