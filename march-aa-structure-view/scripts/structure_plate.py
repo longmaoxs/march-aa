@@ -1201,7 +1201,9 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
             break
     for idx, c in enumerate(cals, 1):
         sx, sy = placed[idx - 1]
-        if c.get('xy'):
+        if c.get('_lead_to'):
+            anchor = [c['_lead_to'][0] * cv.w, c['_lead_to'][1] * cv.h]
+        elif c.get('xy'):
             anchor = [sx, sy]            # 人工指定坐标：徽标就压在构件上，不画引线
         else:
             anchor = list(c['_pxy']) if c.get('_pxy') else list(ax.pt(c['at']))
@@ -2481,6 +2483,8 @@ def _apply_xy(job, model):
         v = m.get(c.get('label'))
         if v:
             c['xy'] = (float(v[0]), float(v[1]))
+            if len(v) >= 4:                 # 可选：再给一个「引线指到」的坐标
+                c['_lead_to'] = (float(v[2]), float(v[3]))
             c.pop('lead', None)
             c.pop('_pxy', None)
     return model
