@@ -150,7 +150,7 @@ def main():
     tw = int(th * 1.42)
     tw_txt = nw - tw - int(20 * ts)
 
-    head_lines = SP._wrap(cv, summary, f_note, nw) or [summary]
+    head_lines = SP._wrap(cv, summary, f_note, nw - int(34 * ts)) or [summary]
     head_lines = head_lines[:4]
     blocks = []
     for i, (no, hd, paras) in enumerate(notes):
@@ -160,7 +160,7 @@ def main():
         blocks.append((no, hd, ls[:4]))
 
     top_pad = int(28 * ts)
-    head_h = int(96 * ts) + int(56 * ts) + len(head_lines) * LH + int(56 * ts) + int(18 * ts)
+    head_h = int(96 * ts) + int(56 * ts) + len(head_lines) * LH + int(92 * ts) + int(18 * ts)
     ents_h = sum(max(th, int(64 * ts) + len(ls) * LH) for _, _, ls in blocks) + GAP * (len(blocks) - 1)
     total = top_pad + head_h + ents_h + int(104 * ts) + seal
 
@@ -173,7 +173,7 @@ def main():
         cv.text(nx, y, line, f_note, SP.INK3, anchor='lm'); y += LH
     y += int(24 * ts)
     cv.line([(nx, y), (nx + nw, y)], SP.INK4, 1.4)
-    y += int(56 * ts)   # 标题区与 01 之间留空
+    y += int(92 * ts)   # 副题(含总述)与 01 之间留大空
 
     for i, (no, hd, ls) in enumerate(blocks):
         m1 = dict(model, faces=bands[notes_top_index[i]], lines=lbands[notes_top_index[i]],
@@ -201,9 +201,10 @@ def main():
                             'assets/brand/mark.png')).convert('RGBA')
         mk = mk.resize((seal, seal), Image.LANCZOS)
         cv.img.paste(mk, (int(nx * _SC(cv)), int(lg_y * _SC(cv))), mk)
-        cv.text(nx + seal + int(24 * ts), lg_y + int(seal * 0.40), 'march-aa',
+        _cy = lg_y + seal // 2
+        cv.text(nx + seal + int(26 * ts), _cy - int(17 * ts), 'march-aa',
                 f_sig, SP.INK, anchor='lm')
-        cv.text(nx + seal + int(24 * ts), lg_y + int(seal * 0.79),
+        cv.text(nx + seal + int(26 * ts), _cy + int(25 * ts),
                 '古建构造关系轴测 · structure view', f_sig2, SP.INK3, anchor='lm')
     except Exception as e:
         print('logo skipped:', e)
