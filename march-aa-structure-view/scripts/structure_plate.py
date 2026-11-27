@@ -1162,9 +1162,12 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
             else:
                 c['lead'] = True          # 该构件被完全遮住：标记外移 + 引线
     def _pp(c):
+        if c.get('xy'):
+            return [c['xy'][0] * cv.w, c['xy'][1] * cv.h]
         if c.get('_pxy'):
             return list(c['_pxy'])
         return list(ax.pt(c['at']))
+    num_of = {id(c): i for i, c in enumerate(cals)}   # 编号按 callout 原始顺序，与图例一致
     cals.sort(key=lambda c: -_pp(c)[1])
     placed = [_pp(c) for c in cals]
     # 带引线的构件：把标记先拖到构件上方，再说避让
@@ -1213,7 +1216,7 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
                     cv.line([(sx + ux * a, sy + uy * a), (sx + ux * b, sy + uy * b)], INK3, 0.9)
                 cv.ellipse(ex, ey, 3.4, 3.4, fill=ACCENT)
         cv.ellipse(sx, sy, r_mark, r_mark, fill=PAPER, outline=ACCENT, lw=1.7, alpha=238)
-        cv.text(sx, sy + 2, '%02d' % idx, f_num, ACCENT_DEEP, anchor='mm')
+        cv.text(sx, sy + 2, '%02d' % (num_of[id(c)] + 1), f_num, ACCENT_DEEP, anchor='mm')
     return None
 
 
@@ -2468,12 +2471,24 @@ def render_subject(job, W=2400, H=1800):
     return cv
 
 
+def _apply_xy(job, model):
+    """人工指定的标注坐标（分数，0..1）优先于自动锚点。"""
+    m = job.get('callout_xy') or {}
+    for c in model.get('callouts', []):
+        v = m.get(c.get('label'))
+        if v:
+            c['xy'] = (float(v[0]), float(v[1]))
+            c.pop('lead', None)
+            c.pop('_pxy', None)
+    return model
+
+
 def render(job):
     fam = job['family']
     if fam not in BUILDERS:
         raise SystemExit('family 未实现：%s（支持 %s）' % (fam, '/'.join(sorted(BUILDERS))))
     par = job.get('params', {})
-    model = BUILDERS[fam](par)
+    model = _apply_xy(job, BUILDERS[fam](par))
     W, H = RATIOS.get(job.get('ratio', '3:4'), RATIOS['3:4'])
     cv = Canvas(W, H)
     ts = _ts(W, H)
