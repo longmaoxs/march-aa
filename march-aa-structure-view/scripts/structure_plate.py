@@ -554,6 +554,17 @@ def brick_tri(gx, ys, shz, ridge_z, course=0.24, color=BRICK):
 
 def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
     """斗拱。style: jixin(计心造,每跳加横栱) | touxin(偷心造,只出华栱) | yidou3sheng(一斗三升)"""
+    if style == 'xiegong':                 # 斜拱：45° 斜出的两跳
+        import math as _m
+        base = [(p[0], p[1], z0) for p in pts]
+        out += prism(cx, cy, 0.26, z0, z0 + 0.20, n=8, kind=kind)
+        for k in range(2):
+            zz = z0 + 0.24 + k * 0.26
+            ln2 = 0.42 - k * 0.08
+            for s in (-1.0, 1.0):
+                dx, dy = _m.cos(_m.pi / 4) * s * ln2, _m.sin(_m.pi / 4) * s * ln2
+                out += box(cx + dx - 0.07, cy + dy - 0.07, zz, cx + dx + 0.07, cy + dy + 0.07, zz + 0.10, kind)
+        return out
     if style == 'yidou3sheng':
         out = []
         h = z1 - z0
@@ -591,7 +602,8 @@ def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
 
 
 BASE_NAME = {'plain': '素平', 'fupen': '覆盆式', 'lianban': '宝装莲瓣', 'drum': '鼓镜', 'xumizuo': '须弥座'}
-BRACKET_NAME = {'jixin': '三跳计心造', 'touxin': '偷心造', 'yidou3sheng': '一斗三升'}
+BRACKET_NAME = {'jixin': '三跳计心造', 'touxin': '偷心造', 'yidou3sheng': '一斗三升',
+                'xiegong': '斜拱'}
 RIDGE_NAME = {'chiwei': '鸱尾（唐式）', 'chiwen': '鸱吻（宋式）', 'zhengwen': '正吻（明清式）', 'none': ''}
 
 
@@ -1484,7 +1496,9 @@ def build_dian(p):
     f += wf
     ln += wl
     cal.append({'at': (0, -hd, zt + 0.16), 'label': '额枋'})
-    cal.append({'at': (-hw * 0.55, -hd, ph + 1.4), 'label': '墙体槛窗'})
+    cal.append({'at': (-hw * 0.55, -hd, ph + 1.4),
+                    'label': '墙体' + {'zhiling': '直棂窗', 'jian': '槛窗',
+                                     'zhizhai': '支摘窗', 'lou': '漏窗'}.get(win, '槛窗')})
 
     # 当心间板门、两梢间直棂窗（正面 y=-hd 外贴一层）
     yf = hd + 0.03          # 相机在 (+x,+y) 侧，门要开在朝观察者的长边上
@@ -1525,6 +1539,17 @@ def build_dian(p):
                     xx = wx0 + (wx1 - wx0) * k / 5.0
                     ln.append((((xx, yf, zz), (xx, yf, wz1)), INK3, 0.8, None))
                     ln.append((((xx, yf, wz0), (xx, yf, zz)), INK3, 0.6, None))
+            elif win == 'lou':
+                for i in range(4):
+                    for j in range(5):
+                        x0 = wx0 + (wx1 - wx0) * i / 4.0
+                        x1 = wx0 + (wx1 - wx0) * (i + 1) / 4.0
+                        z0 = wz0 + (wz1 - wz0) * j / 5.0
+                        z1b = wz0 + (wz1 - wz0) * (j + 1) / 5.0
+                        cx0, cz0 = (x0 + x1) / 2.0, (z0 + z1b) / 2.0
+                        for pa, pb in (((x0, z0), (cx0, z1b)), ((cx0, z1b), (x1, z0)),
+                                       ((x0, z1b), (cx0, z0)), ((cx0, z0), (x1, z1b))):
+                            ln.append((((pa[0], yf, pa[1]), (pb[0], yf, pb[1])), INK3, 0.7, None))
             elif win == 'zhizhai':
                 zz = wz0 + (wz1 - wz0) * 0.55
                 ln.append((((wx0, yf, zz), (wx1, yf, zz)), INK3, 1.3, None))
@@ -1607,6 +1632,14 @@ def build_dian(p):
         f += ridge_box(-hw, hw, ridge, 0.26, orn=ro if p.get('chiwen', True) else 'none')
         cal.append({'at': (hw * 0.35, -ey * 0.5, z1 + 0.5), 'label': '两坡屋面'})
         cal.append({'at': (-hw, 0, ridge + 0.8), 'label': '正脊' + RIDGE_NAME.get(ro, '鸱尾')})
+        # 博风板（沿山面两坡的斜边）+ 悬鱼（脊端小三角），悬山最典型的收头
+        for sgn in (-1.0, 1.0):
+            gx = sgn * hw
+            for sgn2 in (-1.0, 1.0):
+                ln.append((((gx, sgn2 * ey, z1), (gx, 0.0, ridge)), ACCENT, 2.0, True))
+            tri = ((gx, -0.55, ridge - 0.55), (gx, 0.55, ridge - 0.55), (gx, 0.0, ridge - 0.12))
+            f.append(_F(tri, 'accent', alpha=150))
+        cal.append({'at': (hw, 0, ridge - 0.5), 'label': '博风板 · 悬鱼'})
         rr = ridge
     elif style == 'wudian':
         ridge = z1 + ey * float(p.get('pitch', 0.34))
