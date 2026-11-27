@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## 未发布
+
+- **照片量比值：先矫正，再测线**。`analyze_photo.py` 新增 `--rectify {none,roll,quad}`（默认 roll）与
+  `--quad`；报告写 `measure.rectified{mode, angle_deg | quad}`。实测结论写进文档：矫正本身不改比值，
+  必须在矫正后的图上重新测线；误差上限在「选哪条边」（±10 px ≈ 斗拱带 ±23%），不在倾斜。
+- `references/photo-to-json.md` 补「拍照要求」与误差表；`references/lessons.md` 补第 24/25 条
+  （矫正链路、`_line_angle` 的 0..1 灰度阈值坑）。
+- README 的「从一张照片开始」重写为七步流水线（拍摄→矫正→量线→换算→认形制→出图→复核），
+  含拍摄要求表与「能测什么、测不准什么」。
+- `hall_tang_photo.json` 的 `bracket_h` 由 0.31 改 0.29（自动读数 0.272 与手工 0.311 的中点）。
+
 ## v0.5 · 首个公开版本（2026-11）
 
 内部迭代号 v1.0–v1.10 统一折算为公开版本 **0.5**：能稳定出图、七族都有样本，
