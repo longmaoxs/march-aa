@@ -2295,7 +2295,7 @@ def render(job):
     draw_model(cv, model, ax)
     draw_chain(cv, model, ax, f_num)
     _rect(cv, 0, 0, W, rule_y + 2, PAPER)
-    _rect(cv, 0, sig - int(150 * ts), W, H, PAPER)
+    _rect(cv, 0, sig - int(132 * ts), W, H, PAPER)
 
     # ── 标题块 ───────────────────────────────────────────
     _rect(cv, mx, top, mx + int(16 * ts), top + int(150 * ts), ACCENT)
@@ -2380,13 +2380,26 @@ def render(job):
     cv.text(bx, by + bh_ + int(10 * ts), '0', f_num, INK3)
     cv.text(bx + bl, by + bh_ + int(10 * ts), '2 m', f_num, INK3, anchor='ra')
 
-    seal = int(62 * ts)
-    sy = sig + int(26 * ts)
-    _rect(cv, mx, sy, mx + seal, sy + seal, ACCENT)
-    ch = (job.get('sign') or '构')[0]
-    cv.text(mx + seal / 2, sy + seal / 2 - int(3 * ts), ch, f_seal, PAPER, anchor='mm')
-    cv.text(mx + seal + int(18 * ts), sy + seal / 2 - int(1 * ts),
-            job.get('signText', 'march-aa structure view'), f_sig, INK3, anchor='lm')
+    # 左下角：换成 march-aa 的「亭」标识（assets/brand/mark.png），字也随之放大
+    seal = int(84 * ts)
+    sy = sig + int(6 * ts)
+    try:
+        from PIL import Image as _Img
+        _mk = _Img.open(str(__import__('pathlib').Path(__file__).resolve().parent.parent
+                            / 'assets/brand/mark.png')).convert('RGBA')
+        _mk = _mk.resize((seal, seal), _Img.LANCZOS)
+        _S = cv.img.width / float(cv.w)
+        _mk2 = _mk.resize((int(seal * _S), int(seal * _S)), _Img.LANCZOS)
+        cv.img.paste(_mk2, (int(mx * _S), int(sy * _S)), _mk2)
+    except Exception:
+        _rect(cv, mx, sy, mx + seal, sy + seal, ACCENT)
+        cv.text(mx + seal / 2, sy + seal / 2 - int(3 * ts),
+                (job.get('sign') or '构')[0], f_seal, PAPER, anchor='mm')
+    f_brand = font('num', F(46))
+    cv.text(mx + seal + int(20 * ts), sy + seal * 0.36,
+            'march-aa', f_brand, INK, anchor='lm')
+    cv.text(mx + seal + int(20 * ts), sy + seal * 0.78,
+            '古建构造关系轴测 · structure view', font('hei', F(26)), INK3, anchor='lm')
     cv.text(W - mr, sy + seal / 2, '东南向轴测 · 被遮构件降为浅虚线', f_note, INK4, anchor='rm')
     dl = _dim_line(fam, par)
     if dl:
