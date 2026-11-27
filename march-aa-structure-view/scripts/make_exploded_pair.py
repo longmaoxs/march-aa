@@ -8,7 +8,7 @@ import structure_plate as SP
 
 W, H = 1800, 2400          # 竖版：高宽比 4:3
 TOP = int(H * 0.35)
-NOTE_W = int(W * 0.34)
+NOTE_W = int(W * 0.40)
 
 
 _SC = lambda cv: cv.img.width / float(cv.w)
@@ -94,57 +94,81 @@ def main():
     ax = SP.Axo(k=k, zk=float(job.get('z_ratio', 0.95)), ox=ox, oy=oy)
     SP.draw_model(cv, model2, ax)
 
-    # ── 右栏：样式总述 + 每条带小图示 + 页脚 logo ──────────────
-    f_no = SP.font('num', F(30))
-    f_hd = SP.font('hei', F(34))
-    f_note = SP.font('hei', F(22))
-    f_era = SP.font('kai', F(46))
-    f_sub = SP.font('hei', F(24))
-    f_sig = SP.font('num', F(30))
-    f_sig2 = SP.font('hei', F(21))
+    # ── 右栏：风格 + 形制 + 构件分条（大字号）+ 页脚 logo ──────
+    f_era = SP.font('kai', F(66))
+    f_sub = SP.font('hei', F(31))
+    f_lab = SP.font('hei', F(29))
+    f_val = SP.font('hei', F(31))
+    f_no = SP.font('num', F(36))
+    f_hd = SP.font('hei', F(42))
+    f_note = SP.font('hei', F(29))
+    f_sig = SP.font('num', F(38))
+    f_sig2 = SP.font('hei', F(26))
 
-    nx = W - NOTE_W + int(10 * ts)
-    nw = NOTE_W - int(34 * ts)
-    notes = job.get('explodeNotes') or [
-        ('01', '屋顶 · 屋面', '坡面与瓦垄，挂在梁架与斗拱之上。'),
-        ('02', '斗拱 · 额枋', '把屋面荷载层层收拢，再交给柱子。'),
-        ('03', '柱网 · 墙体', '柱承重、墙只围护，木构与砖石分工。'),
-        ('04', '台基 · 踏道', '抬离地面，收住全部竖向荷载。'),
+    nx = W - NOTE_W + int(8 * ts)
+    nw = NOTE_W - int(30 * ts)
+    p_ = job.get('params', {})
+    comp = p_.get('components') or {}
+    roof_name = {'wudian': '庑殿（四阿）', 'xieshan': '歇山', 'yingshan': '悬山',
+                 'barrel': '卷棚', 'luding': '盝顶'}.get(p_.get('style'), '厅堂')
+    eaves = int(p_.get('eaves', 1))
+    bays, bayw = int(p_.get('bays', 3)), float(p_.get('bay', 4.0))
+    dbays, dbayw = int(p_.get('depth_bays', 3)), float(p_.get('bayd', 3.6))
+    base_name = {'plain': '素台基', 'xumizuo': '须弥座'}.get(comp.get('platform_base'), '素台基')
+    win_name = {'zhiling': '直棂窗', 'jian': '槛窗', 'zhizhai': '支摘窗',
+                'lou': '漏窗'}.get(comp.get('window'), '直棂窗')
+    brk_name = {'jixin': '计心造', 'touxin': '偷心造',
+                'yidou3sheng': '一斗三升', 'xiegong': '斜拱'}.get(comp.get('bracket'), '计心造')
+    col_base = {'fupen': '覆盆式', 'lianban': '莲瓣式', 'drum': '鼓镜式',
+                'xumizuo': '须弥座式', 'plain': '素覆盆'}.get(comp.get('column_base'), '覆盆式')
+    shaft = {'round': '圆柱', 'octagon': '八角柱', 'square': '方柱', 'suo': '梭柱'}.get(
+        comp.get('column_shaft'), '圆柱')
+
+    era = job.get('eraNote') or (job.get('title') or '').replace('·', '').strip()
+    facts = [
+        ('屋顶', '%s · %s檐' % (roof_name, '重' if eaves >= 2 else '单')),
+        ('间架', '面阔 %d 间 × %.1f m　进深 %d 间 × %.1f m' % (bays, bayw, dbays, dbayw)),
+        ('斗拱', '%s · 柱头 + 补间' % brk_name),
+        ('柱·础', '%s · %s' % (shaft, col_base)),
+        ('门窗', '%s · 板门' % win_name),
+        ('台基', '%s · %d 级踏道' % (base_name, int(p_.get('plat_steps', 5)))),
     ]
-    notes = notes[:n]
-    era = job.get('eraNote') or job.get('title') or ''
-    style_note = job.get('styleNote') or (
-        '%s  ·  面阔 %d 间 / 进深 %d 间' % (
-            (job.get('params', {}).get('style') or '厅堂').upper() and
-            {'wudian': '庑殿', 'xieshan': '歇山', 'yingshan': '悬山',
-             'barrel': '卷棚', 'luding': '盝顶'}.get(
-                 job.get('params', {}).get('style'), '厅堂'),
-            int(job.get('params', {}).get('bays', 3)),
-            int(job.get('params', {}).get('depth_bays', 3))))
+    summary = job.get('styleNote') or (
+        '斗拱雄大、出檐深远、屋面平缓；力由屋面逐层收到斗拱、额枋、柱，'
+        '最后由台基收入地面。')
 
-    # 页脚 logo 预留
-    seal = int(74 * ts)
-    foot_y = H - int(58 * ts) - seal
-    avail_top = TOP + int(96 * ts)
-    avail_bot = foot_y - int(46 * ts)
-    # 样式块
-    cv.text(nx, avail_top, era or '构造关系', f_era, SP.INK, anchor='lm')
-    avail_top += int(44 * ts)
-    for line in SP._wrap(cv, style_note, f_sub, nw) or [style_note]:
-        cv.text(nx, avail_top, line, f_sub, SP.INK3, anchor='lm')
-        avail_top += int(30 * ts)
-    avail_top += int(10 * ts)
-    cv.line([(nx, avail_top), (nx + nw, avail_top)], SP.INK4, 1.2)
-    avail_top += int(30 * ts)
-
-    # 四条：均匀分布剩余高度
-    slot = (avail_bot - avail_top) / float(len(notes))
-    th = min(int(slot * 0.56), int(196 * ts))
-    tw = int(th * 1.48)
+    seal = int(80 * ts)
+    foot_y = H - int(52 * ts) - seal
+    y = TOP + int(74 * ts)
+    # 标题
+    cv.text(nx, y, era or '构造关系', f_era, SP.INK, anchor='lm')
+    y += int(52 * ts)
+    cv.text(nx, y, '%s · 唐式木构' % roof_name, f_sub, SP.ACCENT, anchor='lm')
+    y += int(40 * ts)
+    cv.line([(nx, y), (nx + nw, y)], SP.INK4, 1.4)
+    y += int(34 * ts)
+    # 形制六行
+    for lab, val in facts:
+        cv.text(nx, y, lab, f_lab, SP.ACCENT, anchor='lm')
+        cv.text(nx + int(78 * ts), y, val, f_val, SP.INK, anchor='lm')
+        y += int(40 * ts)
+    y += int(14 * ts)
+    cv.line([(nx, y), (nx + nw, y)], SP.INK4, 1.0)
+    y += int(36 * ts)
+    # 构件分条（小图示 + 大字）
+    notes = job.get('explodeNotes') or [
+        ('01', '屋顶 · 屋面', '坡面铺瓦成垄，压在梁架与斗拱上。'),
+        ('02', '斗拱 · 额枋', '层层出跳，把屋面的荷载收拢到柱头。'),
+        ('03', '柱网 · 墙体', '柱承重、墙只围护，木构与砖石各司其职。'),
+        ('04', '台基 · 踏道', '把整栋建筑抬离地面，收住全部竖向荷载。'),
+    ][:n]
+    notes_top_index = list(range(n))[::-1]
+    slot = max(int(150 * ts), (foot_y - int(70 * ts) - y) / float(len(notes)))
+    th = min(int(slot * 0.72), int(150 * ts))
+    tw = int(th * 1.40)
     for i, (no, hd, txt) in enumerate(notes):
-        by = avail_top + i * slot
-        cy = by + slot * 0.5
-        # 小图示：单独渲染这一层
+        by = y + i * slot
+        cy = by + slot * 0.42
         m1 = dict(model, faces=bands[notes_top_index[i]], lines=lbands[notes_top_index[i]],
                   callouts=[], chain=[])
         u0, v0, u1, v1 = SP._uv_bbox(m1)
@@ -157,23 +181,27 @@ def main():
         SP.draw_model(mini, m1, ax2)
         thumb = mini.img.resize((tw, th), Image.LANCZOS).convert('RGB')
         cv.img.paste(thumb, (int(nx * _SC(cv)), int((cy - th * 0.5) * _SC(cv))))
-        tx = nx + tw + int(16 * ts)
-        cv.text(tx, cy - th * 0.34, no, f_no, SP.ACCENT, anchor='lm')
-        cv.text(tx + int(38 * ts), cy - th * 0.34, hd, f_hd, SP.INK, anchor='lm')
-        yy = cy - th * 0.34 + int(34 * ts)
-        for line in (SP._wrap(cv, txt, f_note, nw - tw - int(16 * ts)) or [txt])[:3]:
-            cv.text(tx + int(38 * ts), yy, line, f_note, SP.INK3, anchor='lm')
-            yy += int(26 * ts)
+        tx = nx + tw + int(20 * ts)
+        cv.text(tx, cy - th * 0.30, no, f_no, SP.ACCENT, anchor='lm')
+        cv.text(tx + int(46 * ts), cy - th * 0.30, hd, f_hd, SP.INK, anchor='lm')
+        yy = cy - th * 0.30 + int(44 * ts)
+        for line in (SP._wrap(cv, txt, f_note, nw - tw - int(20 * ts)) or [txt])[:2]:
+            cv.text(tx + int(46 * ts), yy, line, f_note, SP.INK3, anchor='lm')
+            yy += int(34 * ts)
 
-    # 右下 logo
+    # 页脚：总结 + logo
+    yb = foot_y - int(86 * ts)
+    for line in (SP._wrap(cv, summary, f_note, nw) or [summary])[:3]:
+        cv.text(nx, yb, line, f_note, SP.INK3, anchor='lm')
+        yb += int(34 * ts)
     try:
         mk = Image.open(str(Path(__file__).resolve().parent.parent /
                             'assets/brand/mark.png')).convert('RGBA')
         mk = mk.resize((seal, seal), Image.LANCZOS)
         cv.img.paste(mk, (int(nx * _SC(cv)), int(foot_y * _SC(cv))), mk)
-        cv.text(nx + seal + int(18 * ts), foot_y + int(seal * 0.30), 'march-aa',
+        cv.text(nx + seal + int(20 * ts), foot_y + int(seal * 0.32), 'march-aa',
                 f_sig, SP.INK, anchor='lm')
-        cv.text(nx + seal + int(18 * ts), foot_y + int(seal * 0.72),
+        cv.text(nx + seal + int(20 * ts), foot_y + int(seal * 0.74),
                 '古建构造关系轴测 · structure view', f_sig2, SP.INK3, anchor='lm')
     except Exception as e:
         print('logo skipped:', e)
