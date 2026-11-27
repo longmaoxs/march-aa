@@ -104,7 +104,7 @@ def main():
     f_sig2 = SP.font('hei', F(27))
 
     nx = W - NOTE_W + int(6 * ts)
-    nw = NOTE_W - int(26 * ts)
+    nw = NOTE_W - int(58 * ts)   # 右侧多收一些，别顶到边
     p_ = job.get('params', {})
     comp = p_.get('components') or {}
     roof_name = {'wudian': '庑殿（四阿）', 'xieshan': '歇山', 'yingshan': '悬山',
@@ -185,8 +185,9 @@ def main():
                      ox=-k2 * u0 + (tw - k2 * w_) * 0.5,
                      oy=-k2 * v0 + (th - k2 * h_) * 0.5)
         mini = SP.Canvas(tw, th); SP.draw_model(mini, m1, ax2)
-        thumb = mini.img.resize((tw, th), Image.LANCZOS).convert('RGB')
-        cv.img.paste(thumb, (int(nx * _SC(cv)), int((y + int(6 * ts)) * _SC(cv))))
+        _S = _SC(cv)
+        thumb = mini.img.resize((int(tw * _S), int(th * _S)), Image.LANCZOS).convert('RGB')
+        cv.img.paste(thumb, (int(nx * _S), int((y + int(6 * ts)) * _S)))
         tx = nx + tw + int(20 * ts)
         cv.text(tx, y + int(18 * ts), no, f_no, SP.ACCENT, anchor='lm')
         cv.text(tx + int(52 * ts), y + int(18 * ts), hd, f_hd, SP.INK, anchor='lm')
@@ -199,8 +200,9 @@ def main():
     try:
         mk = Image.open(str(Path(__file__).resolve().parent.parent /
                             'assets/brand/mark.png')).convert('RGBA')
-        mk = mk.resize((seal, seal), Image.LANCZOS)
-        cv.img.paste(mk, (int(nx * _SC(cv)), int(lg_y * _SC(cv))), mk)
+        _S = _SC(cv)
+        mk = mk.resize((int(seal * _S), int(seal * _S)), Image.LANCZOS)
+        cv.img.paste(mk, (int(nx * _S), int(lg_y * _S)), mk)
         _cy = lg_y + seal // 2
         cv.text(nx + seal + int(26 * ts), _cy - int(17 * ts), 'march-aa',
                 f_sig, SP.INK, anchor='lm')
