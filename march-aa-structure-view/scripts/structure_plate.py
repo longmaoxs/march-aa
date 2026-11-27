@@ -1154,10 +1154,11 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
     for c in cals:
         pn = _part_of(c.get('label'))
         if pn:
-            _PART_TARGET[0] = pn
-            hit = _anchor_for(model, c['at'])
+            hit, vis = _vis_anchor(model, ax, cv.w, cv.h, pn, c['at'])
             if hit:
-                c['at'] = hit
+                c['_pxy'] = hit
+            else:
+                c['lead'] = True          # 该构件被完全遮住：标记外移 + 引线
     def _pp(c):
         if c.get('_pxy'):
             return list(c['_pxy'])
@@ -1251,7 +1252,7 @@ def _anchor_for(model, at):
 
 
 
-def _id_map(model, ax, W, H, sc=0.3):
+def _id_map(model, ax, W, H, sc=0.3, include_accent=False):
     """按画家顺序把每个面画进 id 图：像素值 = 面序号+1，最终留下的是真正可见的面。"""
     from PIL import Image as _I, ImageDraw as _D
     w, h = max(32, int(W * sc)), max(32, int(H * sc))
@@ -1268,7 +1269,7 @@ def _id_map(model, ax, W, H, sc=0.3):
             area += x0 * y1 - x1 * y0
         if abs(area * 0.5) < 0.8:
             continue
-        if kind == 'accent':          # 屋面是玻璃罩，不作为遮挡体参与 id 图
+        if kind == 'accent' and not include_accent:
             continue
         depth = sum(q[0] + q[1] + q[2] for q in quad) / float(len(quad))
         order.append((depth, idx, pts2, kind, meta))
@@ -1280,6 +1281,56 @@ def _id_map(model, ax, W, H, sc=0.3):
         dr.polygon([(x * sc, y * sc) for x, y in pts2], fill=idx + 1)
     return im, sc
 
+
+
+def _vis_anchor(model, ax, W, H, part_name, at):
+    """在该构件的面里找「确实露在最前」的位置：面内多点取样，取首个可见点。
+    返回 ((x, y), visible)。"""
+    im, sc = _id_map(model, ax, W, H, include_accent=True)
+    px = im.load()
+    w, h = im.size
+    best, bd = None, 1e9
+    for idx, fac in enumerate(model.get('faces', [])):
+        quad, kind, meta = _fs(fac)
+        if meta.get('part') != part_name:
+            continue
+        cx_ = sum(q[0] for q in quad) / len(quad)
+        cy_ = sum(q[1] for q in quad) / len(quad)
+        cz_ = sum(q[2] for q in quad) / len(quad)
+        # 面内取样：中心 + 朝每个顶点收 45%
+        pts = [(cx_, cy_, cz_)]
+        for q in quad:
+            pts.append((cx_ + (q[0] - cx_) * 0.45,
+                        cy_ + (q[1] - cy_) * 0.45,
+                        cz_ + (q[2] - cz_) * 0.45))
+        for cand in pts:
+            sx, sy = ax.pt(cand)
+            ix, iy = int(sx * sc), int(sy * sc)
+            if not (0 <= ix < w and 0 <= iy < h):
+                continue
+            if px[ix, iy] != idx + 1:      # 该点看到的是别的面 → 被挡
+                continue
+            d = math.dist(cand, at)
+            if d < bd:
+                bd, best = d, (sx, sy)
+    if best is None:
+        return None, False
+    # 该构件露出的面积太小（基本被遮住）→ 也算「看不见」，改为外移标记
+    cnt = 0
+    ids = set()
+    for i2, fac in enumerate(model.get('faces', [])):
+        if _fs(fac)[2].get('part') == part_name:
+            ids.add(i2 + 1)
+    if ids:
+        for yy in range(h):
+            for xx in range(w):
+                if px[xx, yy] in ids:
+                    cnt += 1
+                    if cnt >= 500:
+                        break
+            if cnt >= 500:
+                break
+    return (best, True) if cnt >= 500 else (None, False)
 
 def _part_anchor(model, ax, W, H, part_name):
     """该构件在画面上真正可见像素的重心（逻辑坐标）；完全被挡则返回 None。"""
