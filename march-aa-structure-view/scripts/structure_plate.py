@@ -2196,6 +2196,34 @@ def _dim_line(fam, p):
     return ''
 
 
+
+def render_subject(job, W=2400, H=1800):
+    """只画主体：无标题/图例/页脚。用于「照片在上、主体在下」的 4:3 版式。"""
+    fam = job['family']
+    par = job.get('params', {})
+    model = BUILDERS[fam](par)
+    cv = Canvas(W, H)
+    ts = _ts(W, H)
+    F = lambda sz: max(11, int(round(sz * ts)))
+    f_num = font('num', F(30))
+    mx = mr = int(60 * ts)
+    my = int(52 * ts)
+    x0, x1 = mx, W - mr
+    y0, y1 = my, H - my
+    umin, vmin, umax, vmax = _uv_bbox(model)
+    bw, bh = max(1e-6, umax - umin), max(1e-6, vmax - vmin)
+    k = min((x1 - x0) / bw, (y1 - y0) / bh)
+    ox = x0 - k * umin + ((x1 - x0) - k * bw) * 0.5
+    oy = y0 - k * vmin + ((y1 - y0) - k * bh) * 0.5
+    if job.get('view', 'axo') == 'front':
+        ax = Axo(k=k, zk=1.0, ox=ox, oy=oy, c=1.0, s=0.0)
+    else:
+        ax = Axo(k=k, zk=float(job.get('z_ratio', 0.95)), ox=ox, oy=oy)
+    draw_model(cv, model, ax)
+    draw_chain(cv, model, ax, f_num)
+    return cv
+
+
 def render(job):
     fam = job['family']
     if fam not in BUILDERS:
@@ -2452,12 +2480,19 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description='古建构造关系轴测图（透明画法）')
     ap.add_argument('--json', required=True, help='形制 JSON')
     ap.add_argument('--out', required=True, help='输出 PNG')
+    ap.add_argument('--subject', action='store_true',
+                    help='只画主体（4:3，无标题/图例/页脚），用于照片+成图版式')
     ap.add_argument('--ratio', default=None, choices=sorted(RATIOS))
     args = ap.parse_args(argv)
     with open(args.json, encoding='utf-8') as fh:
         job = json.load(fh)
     if args.ratio:
         job['ratio'] = args.ratio
+    if getattr(args, 'subject', False):
+        cv = render_subject(job, 2400, 1800)
+        cv.img.resize((2400, 1800), __import__('PIL.Image').Image.LANCZOS).save(args.out)
+        print('saved: %s (2400×1800)  只画主体' % args.out)
+        return
     img, info = render(job)
     img.save(args.out)
     print('saved: %s (%d×%d)  %s' % (args.out, img.size[0], img.size[1], info))
