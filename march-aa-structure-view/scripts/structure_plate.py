@@ -1228,7 +1228,8 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
 
 
 
-_PART_KEYS = (('台基', '台基'), ('踏跺', '台基'), ('踏道', '台基'), ('柱础', '柱础'),
+_PART_KEYS = (('桥面', '桥面'), ('栏板', '栏板望柱'), ('望柱', '栏板望柱'), ('桥台', '桥台'),
+              ('台基', '台基'), ('踏跺', '台基'), ('踏道', '台基'), ('柱础', '柱础'),
               ('直棂窗', '门窗'), ('槛窗', '门窗'), ('支摘窗', '门窗'), ('漏窗', '门窗'),
               ('窗', '门窗'), ('板门', '门窗'), ('门', '门窗'),
               ('额枋', '额枋'), ('阑额', '额枋'), ('平板枋', '额枋'),
@@ -2267,6 +2268,7 @@ def build_qiao(p):
                             (cx + R * math.sin(a2), yy, cz + R * math.cos(a2))), ACCENT, 1.4, None))
 
     # 栏板 + 望柱
+    _pv = _PART[0]; part('栏板望柱')
     for yy in (-W, W):
         for i in range(segs):
             x0, z0 = deck[i]
@@ -2289,8 +2291,139 @@ def build_qiao(p):
             'chainLabel': '桥面→拱券→桥台', 'meta': meta}
 
 
+def build_qiao5(p):
+    """多孔石拱桥（默认五孔：一中孔 + 每侧两小孔，驼峰桥面）。"""
+    L = float(p.get('span', 40.0))       # 全长
+    width = float(p.get('width', 6.0))
+    W = width / 2.0
+    base = 0.0
+    spr = 0.60                            # 起拱线高度
+    ops = p.get('openings') or [[0.0, 0.33, 0.42], [0.235, 0.105, 0.50],
+                                [-0.235, 0.105, 0.50], [0.390, 0.090, 0.46],
+                                [-0.390, 0.090, 0.46]]
+    arches = []
+    for (cf, sf, hr) in ops:
+        cx = cf * L
+        s = sf * L
+        h = hr * s
+        R = ((s / 2.0) ** 2 + h ** 2) / (2.0 * h)
+        cz = spr + h - R
+        arches.append((cx, s / 2.0, R, cz, h))
+    f, ln, cal = [], [], []
+
+    # 驼峰桥面：贴着各孔拱背走（拱顶 +0.42），在墩上做「闭运算」保持连续
+    N = 96
+    xs = [-L / 2.0 + L * i / N for i in range(N + 1)]
+    env = []
+    for x in xs:
+        e = 0.0
+        for (cx, hspan, R, cz, h) in arches:
+            dx = x - cx
+            if abs(dx) <= hspan + 0.15:
+                e = max(e, cz + math.sqrt(max(0.0, R * R - dx * dx)) + 0.78)
+        env.append(e)
+    win = max(4, N // 9)
+    deck = []
+    for i, x in enumerate(xs):
+        lo, hi = max(0, i - win), min(N, i + win)
+        deck.append((x, max(1.05, max(env[lo:hi + 1]))))
+    # 收头：两端落到 1.05
+    for i in range(N + 1):
+        x, d = deck[i]
+        edge = max(0.0, (abs(x) - 0.40 * L) / (0.08 * L))
+        deck[i] = (x, d + (1.05 - d) * min(1.0, edge))
+
+    def wall_bottom(x):
+        for (cx, hspan, R, cz, h) in arches:
+            dx = x - cx
+            if abs(dx) <= hspan:
+                return cz + math.sqrt(max(0.0, R * R - dx * dx))
+        return spr
+
+    # 桥台：两端实体，顶面与桥面收头齐平
+    _pv = _PART[0]; part('桥台')
+    f += box(-L / 2.0 - 2.2, -W - 1.3, base - 0.8, -L / 2.0 + 1.0, W + 1.3, 1.05, 'mass')
+    f += box(L / 2.0 - 1.0, -W - 1.3, base - 0.8, L / 2.0 + 2.2, W + 1.3, 1.05, 'mass')
+    _PART[0] = _pv
+
+    # 侧墙（拱背以上到桥面），挨着每个开孔留洞
+    segs = len(deck) - 1
+    for i in range(segs):
+        x0, d0 = deck[i]
+        x1, d1 = deck[i + 1]
+        for yy in (-W, W):
+            b0, b1 = wall_bottom(x0), wall_bottom(x1)
+            t0 = max(d0 - 0.34, b0 + 0.26)   # 拱顶附近保证墙身有厚度，避免四边形反转出缺口
+            t1 = max(d1 - 0.34, b1 + 0.26)
+            f.append(_F(((x0, yy, b0), (x1, yy, b1), (x1, yy, t1), (x0, yy, t0)), 'mass'))
+        # 桥面板 + 檐口
+        _pv = _PART[0]; part('桥面')
+        f.append(_F(((x0, -W, d0 - 0.34), (x1, -W, d1 - 0.34),
+                     (x1, W, d1 - 0.34), (x0, W, d0 - 0.34)), 'body'))
+        for yy in (-W, W):
+            f.append(_F(((x0, yy, d0 - 0.34), (x0, yy, d0), (x1, yy, d1), (x1, yy, d1 - 0.34)), 'body'))
+        _PART[0] = _pv
+
+    # 拱券（券脸石环 + 券石缝）
+    for (cx, hspan, R, cz, h) in arches:
+        a0 = math.asin(min(1.0, hspan / R))
+        af, al = arch_ring(cx, cz, R, 0.42, a0, -W, W, segs=16, alpha=76)
+        f += af
+        ln += al
+        for yy in (-W, W):
+            for j in range(0, 17, 2):
+                a = -a0 + 2.0 * a0 * j / 16.0
+                pi = (cx + R * math.sin(a), yy, cz + R * math.cos(a))
+                po = (cx + (R + 0.42) * math.sin(a), yy, cz + (R + 0.42) * math.cos(a))
+                ln.append(((pi, po), ACCENT, 1.0, None))
+            for j in range(16):
+                a1 = -a0 + 2.0 * a0 * j / 16.0
+                a2 = -a0 + 2.0 * a0 * (j + 1) / 16.0
+                ln.append((((cx + (R + 0.42) * math.sin(a1), yy, cz + (R + 0.42) * math.cos(a1)),
+                            (cx + (R + 0.42) * math.sin(a2), yy, cz + (R + 0.42) * math.cos(a2))),
+                           ACCENT, 1.3, None))
+        for j in range(0, 17, 2):
+            a = -a0 + 2.0 * a0 * j / 16.0
+            px = cx + R * math.sin(a)
+            pz = cz + R * math.cos(a)
+            ln.append((((px, -W, pz), (px, W, pz)), ACCENT_SOFT, 0.7, None))
+
+    # 桥墩分水尖（迎水面做尖）
+    pier_x = []
+    for i in range(len(arches) - 1):
+        pier_x.append((arches[i][0] + arches[i + 1][0]) / 2.0)
+    for px in pier_x:
+        for yy in (-W, W):
+            ln.append((((px, yy, spr), (px, yy, spr - 0.5)), ACCENT_SOFT, 0.8, None))
+
+    # 栏板 + 望柱
+    for yy in (-W, W):
+        for i in range(segs):
+            x0, d0 = deck[i]
+            x1, d1 = deck[i + 1]
+            f.append(_F(((x0, yy - 0.07, d0), (x1, yy - 0.07, d1),
+                         (x1, yy + 0.07, d1), (x0, yy + 0.07, d0)), 'screen'))
+            f.append(_F(((x0, yy - 0.07, d0 + 0.62), (x1, yy - 0.07, d1 + 0.62),
+                         (x1, yy + 0.07, d1 + 0.62), (x0, yy + 0.07, d0 + 0.62)), 'screen'))
+        for i in range(0, segs + 1, 3):
+            x, d = deck[i]
+            f += box(x - 0.09, yy - 0.10, d, x + 0.09, yy + 0.10, d + 0.86)
+    _PART[0] = _pv
+
+    zc = max(d for _, d in deck)
+    cal.append({'at': (0, -W, zc + 0.2), 'label': '桥面'})
+    cal.append({'at': (0, -W, spr + 1.2), 'label': '拱券'})
+    _i33 = min(len(deck) - 1, int((0.33 * L + L / 2.0) / L * N))
+    cal.append({'at': (deck[_i33][0], W, deck[_i33][1] + 0.5), 'label': '栏板望柱'})
+    cal.append({'at': (-L / 2.0 - 1.4, W * 0.5, spr * 0.6), 'label': '桥台'})
+    chain = [(0, 0, zc + 0.3), (0, 0, spr + 1.0), (0, 0, spr - 0.3), (0, 0, base)]
+    meta = {'span': L + 4.0, 'height': zc + 1.6}
+    return {'faces': f, 'lines': ln, 'callouts': cal, 'chain': chain,
+            'chainAxis': (0.0, 0.0), 'chainLabel': '桥面→拱券→桥台', 'meta': meta}
+
+
 BUILDERS = {'ting': build_ting, 'lang': build_lang, 'dian': build_dian,
-            'lou': build_lou, 'ta': build_ta, 'men': build_men, 'qiao': build_qiao}
+            'lou': build_lou, 'ta': build_ta, 'men': build_men, 'qiao': build_qiao, 'qiao5': build_qiao5}
 
 
 # ------------------------------------------------------------------ 版式
@@ -2467,7 +2600,7 @@ def render_subject(job, W=2400, H=1800):
     bw, bh = max(1e-6, umax - umin), max(1e-6, vmax - vmin)
     k = min((x1 - x0) / bw, (y1 - y0) / bh)
     ox = x0 - k * umin + ((x1 - x0) - k * bw) * 0.5
-    oy = y0 - k * vmin + ((y1 - y0) - k * bh) * 0.5
+    oy = y0 - k * vmin + ((y1 - y0) - k * bh) * 0.5 - max(0.0, ((y1 - y0) - k * bh) * 0.30)
     if job.get('view', 'axo') == 'front':
         ax = Axo(k=k, zk=1.0, ox=ox, oy=oy, c=1.0, s=0.0)
     else:
@@ -2568,12 +2701,12 @@ def render(job):
     # 允许横向溢出（主体跑出页边），但不超过整幅宽度的 1.35 倍
     k = min(k, (W * 1.34) / bw_all, (y1 - y0) / bh * (1.0 if bh > 1e-3 else 1.0))
     ox = x0 - k * bmin + ((x1 - x0) - k * bw) * 0.5
-    oy = y0 - k * bmin2 + ((y1 - y0) - k * bh) * 0.5
+    oy = y0 - k * bmin2 + ((y1 - y0) - k * bh) * 0.5 - max(0.0, ((y1 - y0) - k * bh) * 0.30)
     # 竖向不许跑出去：把整幅上下压回版心
     if k * bh_all <= (y1 - y0):
         pass
     else:
-        oy = y0 - k * vmin + ((y1 - y0) - k * bh_all) * 0.5
+        oy = y0 - k * vmin + ((y1 - y0) - k * bh_all) * 0.5 - max(0.0, ((y1 - y0) - k * bh_all) * 0.30)
     vw = job.get('view', 'axo')
     if vw == 'front':
         _zk, _vc, _vs = 1.0, 1.0, 0.0
