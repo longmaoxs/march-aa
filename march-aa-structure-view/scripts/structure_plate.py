@@ -1160,6 +1160,38 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
 
 
 
+
+def _snap_visible(model, p, reach=3.2):
+    """把标记点吸附到「最近的、朝向相机的面」的形心，保证标在看得见的一面。"""
+    import math as _m
+    view = (1.0, 1.0, 1.0)
+    best, bd = None, 1e9
+    for fac in model.get('faces', []):
+        quad = _fs(fac)[0]
+        if len(quad) < 3:
+            continue
+        # 面法向（取前三点）
+        ax_, ay_, az_ = quad[0]
+        bx_, by_, bz_ = quad[1]
+        cx_, cy_, cz_ = quad[2]
+        u1 = (bx_ - ax_, by_ - ay_, bz_ - az_)
+        u2 = (cx_ - ax_, cy_ - ay_, cz_ - az_)
+        nx = u1[1] * u2[2] - u1[2] * u2[1]
+        ny = u1[2] * u2[0] - u1[0] * u2[2]
+        nz = u1[0] * u2[1] - u1[1] * u2[0]
+        nl = _m.sqrt(nx * nx + ny * ny + nz * nz) or 1.0
+        if (nx + ny + nz) / nl <= 0.12:      # 背对相机
+            continue
+        cxm = sum(q[0] for q in quad) / len(quad)
+        cym = sum(q[1] for q in quad) / len(quad)
+        czm = sum(q[2] for q in quad) / len(quad)
+        d = _m.dist((cxm, cym, czm), p)
+        if d < bd:
+            bd, best = d, (cxm, cym, czm)
+    if best is not None and bd <= reach:
+        return best
+    return p
+
 def truss_frame(xs, yh, z0, ridge_z, bw=0.15, kind='body', apex_of=None):
     """屋架：下弦 + 两斜撑 + 脊瓜柱（任意 x 位置的排架）。
 
@@ -2220,7 +2252,6 @@ def render_subject(job, W=2400, H=1800):
     else:
         ax = Axo(k=k, zk=float(job.get('z_ratio', 0.95)), ox=ox, oy=oy)
     draw_model(cv, model, ax)
-    draw_chain(cv, model, ax, f_num)
     return cv
 
 
@@ -2263,10 +2294,10 @@ def render(job):
     rule_y = desc_bottom + int(30 * ts)
 
     # ── 画法图例（实线/虚线/朱红）：位置先算，擦完家具再画 ────
-    conv_y = rule_y + int(34 * ts)
+    conv_y = None
     conv_items = ((INK, 1.0, False, '可见轮廓'), (INK3, 0.9, True, '被遮构件'),
-                  (ACCENT, 2.0, False, '传力路径'), (ACCENT_MID, 0.7, False, '瓦垄/棂条'))
-    rule_y = conv_y + int(30 * ts)
+                  (ACCENT_MID, 0.7, False, '瓦垄/棂条'))
+    rule_y = rule_y + int(10 * ts)
 
     # ── 横向图例 ─────────────────────────────────────────
     cals = list(model.get('callouts', []))
@@ -2276,15 +2307,16 @@ def render(job):
     r_leg = int(24 * ts)
     row_h = int(62 * ts)
     # 图例改到图的下方：先只占位，等版心算完再画
-    clabel = model.get('chainLabel')
+    clabel = None
     leg_top_y = None
 
     # ── 版心：横向基本用满页宽 ────────────────────────────
     x0, x1 = mx, W - mr
-    y0 = rule_y + int(46 * ts)
+    y0 = rule_y + int(30 * ts)
     sig = H - int(150 * ts)
-    y1 = sig - int(340 * ts)
-    leg_top_y = y1 + int(40 * ts)
+    y1 = sig - int(372 * ts)
+    leg_top_y = y1 + int(34 * ts)
+    conv_y = leg_top_y + 2 * row_h + int(26 * ts)
     leg_bottom = leg_top_y + 2 * row_h
     chain_y = leg_bottom + int(30 * ts)
     if y1 - y0 < 400 * ts:
@@ -2319,7 +2351,6 @@ def render(job):
 
     # ── 模型先画（可以溢到页边），再擦掉家具区 ─────────────
     draw_model(cv, model, ax)
-    draw_chain(cv, model, ax, f_num)
     _rect(cv, 0, 0, W, rule_y + 2, PAPER)
     _rect(cv, 0, sig - int(64 * ts), W, H, PAPER)
 
