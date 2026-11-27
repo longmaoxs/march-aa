@@ -32,13 +32,19 @@ def edge_energy(g):
 
 
 def subject_box(e):
-    """用边缘能量找主体：列/行能量超过全图中位数的区域。"""
+    """用边缘能量粗略框出主体。只用于报告与版心裁切，不参与比例换算。
+
+    已知局限：树冠、电线、远处屋顶都会被算进这个框（暗色、边缘强）。
+    需要准确的主体框时请用 --crop 手工给。
+    """
     col = e.sum(axis=0)
     row = e.sum(axis=1)
+
     def band(v, frac=0.35):
         thr = v.max() * frac
         idx = np.where(v >= thr)[0]
         return int(idx[0]), int(idx[-1])
+
     x0, x1 = band(col)
     y0, y1 = band(row, 0.45)
     return x0, y0, x1, y1
@@ -205,6 +211,19 @@ def main():
     ap.add_argument('--quad', default=None,
                     help='--rectify quad 用的 4 个角（归一化，TL,TR,BR,BL），'
                          '如 0.10,0.70,0.90,0.70,0.90,0.75,0.10,0.75')
+    ap.add_argument('--crop', default=None,
+                    help='手工给主体框（归一化 x0,y0,x1,y1）；不确定就别传')
+    ap.add_argument('--base', default='platform', choices=['platform', 'wall'],
+                    help='第一条线取哪条：platform=台明前棱（默认，与柱顶不同深度），'
+                         'wall=墙脚线（与柱顶/檐口同平面，比值更准）')
+    ap.add_argument('--ground-y', default=None,
+                    help='地面线归一化 y，用来算台基高；不给就只报"量不出"')
+    ap.add_argument('--span', default=None,
+                    help='面阔两端归一化 x（x0,x1），用来算正脊长/面阔')
+    ap.add_argument('--ridge', default=None,
+                    help='正脊两端归一化 x（x0,x1）')
+    ap.add_argument('--col-h', default=None, type=float,
+                    help='柱高（米）。给了才会把比值换算成绝对尺寸')
     ap.add_argument('--lines', default=None,
                     help='人工确认的 4 条线：可给候选序号（如 10,9,7,6），'
                          '也可直接给归一化 y（带小数，如 0.703,0.542,0.492,0.416），'
@@ -233,6 +252,12 @@ def main():
     g = load_gray(a.photo)
     e = edge_energy(g)
     box = subject_box(e)
+    if a.crop:
+        c = [float(t) for t in a.crop.split(',')]
+        if len(c) != 4:
+            raise SystemExit('--crop 需要 4 个归一化数：x0,y0,x1,y1')
+        box = (int(c[0] * g.shape[1]), int(c[1] * g.shape[0]),
+               int(c[2] * g.shape[1]), int(c[3] * g.shape[0]))
     H, W = g.shape
     x0, y0, x1, y1 = box
     w, h = x1 - x0, y1 - y0
@@ -276,11 +301,17 @@ def main():
                                   for i, (y, st) in enumerate(bands)]
 
     # —— 按照片量比例 ——
-    # 四条线（y 向下增大）：台基上沿 / 柱顶（斗拱下）/ 檐口下沿 / 正脊
+    warnings = []
+    if a.base == 'platform':
+        warnings.append('基线取的是「台明前棱」：它比墙身平面近 0.5–1 m，透视下会让'
+                        '柱高偏低、台基偏高（典型 3–5%）。要更准就 --base wall，'
+                        '并把第一条线换成墙脚线（墙面与台明的交线）。')
+    first_name = '台基上沿' if a.base == 'platform' else '墙脚线'
+    ratios = None
     if a.lines:
         toks = [t.strip() for t in a.lines.split(',') if t.strip()]
         if len(toks) != 4:
-            raise SystemExit('--lines 需要 4 个值（台基上沿,柱顶,檐口,正脊）')
+            raise SystemExit('--lines 需要 4 个值（%s,柱顶,檐口,正脊）' % first_name)
         if any('.' in t for t in toks):
             ybase, ycol, yeave, yridge = [float(t) for t in toks]
         else:
@@ -289,20 +320,80 @@ def main():
                 raise SystemExit('序号越界：只有 %d 条候选线' % len(bands))
             ybase, ycol, yeave, yridge = [bands[i][0] for i in idx]
         if not (yridge < yeave < ycol < ybase):
-            raise SystemExit('顺序不对：需要 正脊 < 檐口 < 柱顶 < 台基上沿（y 向下增大）')
-        tot = ybase - yridge          # 台基上沿 → 正脊（不含台基）
+            raise SystemExit('顺序不对：需要 正脊 < 檐口 < 柱顶 < %s（y 向下增大）' % first_name)
+
+        tot = ybase - yridge
         col = ybase - ycol
         brk = ycol - yeave
         roof = yeave - yridge
-        report['measure']['ratios'] = {
+        ratios = {
             'col_over_total': round(col / tot, 3),
             'bracket_over_total': round(brk / tot, 3),
             'roof_over_total': round(roof / tot, 3),
             'bracket_over_col': round(brk / col, 3),
             'roof_over_col': round(roof / col, 3),
             'span_px': round(tot, 4),
-            'note': '占「台基上沿→正脊」的比例；bracket_over_col 可直接当 job 的 bracket_h',
+            'note': '占「%s → 正脊」的比例；bracket_over_col 可直接当 job 的 bracket_h' % first_name,
         }
+        # 自洽校验：三段落加起来应该正好是 1
+        ssum = ratios['col_over_total'] + ratios['bracket_over_total'] + ratios['roof_over_total']
+        if abs(ssum - 1.0) > 0.05:
+            warnings.append('三段比值之和 = %.3f（应 ≈1）——大概率有一条线选偏了，'
+                            '常见是正脊选到鸱尾上、或柱顶选到斗拱中腰' % ssum)
+        if ratios['bracket_over_col'] < 0.12:
+            warnings.append('斗拱层只占柱高的 %.0f%%：要么确实薄（唐式大斗拱一般 25–40%%），'
+                            '要么斗拱下沿那条线选低了' % (ratios['bracket_over_col'] * 100))
+
+        # 台基高（需要地面线）
+        if a.ground_y:
+            yg = float(a.ground_y)
+            if yg <= ybase:
+                warnings.append('--ground-y 应大于基线 y（地面在更下方），已忽略')
+            else:
+                ratios['plat_h_over_col'] = round((yg - ybase) / col, 3)
+                ratios['plat_h_over_total'] = round((yg - ybase) / tot, 3)
+
+        # 正脊长 / 面阔（两个水平方向的量，几乎不受深度影响）
+        if a.span and a.ridge:
+            sp = [float(t) for t in a.span.split(',')]
+            rg = [float(t) for t in a.ridge.split(',')]
+            if len(sp) == 2 and len(rg) == 2 and abs(sp[1] - sp[0]) > 1e-6:
+                ratios['ridge_over_span'] = round((rg[1] - rg[0]) / (sp[1] - sp[0]), 3)
+        report['measure']['ratios'] = ratios
+
+    # —— 换算成可直接出图的 params + 可信度 ——
+    params, trust = {}, {}
+    if ratios:
+        colh = a.col_h
+        params['bracket_h'] = ratios['bracket_over_col']
+        trust['bracket_h'] = {'value': params['bracket_h'],
+                              'range': [round(params['bracket_h'] * 0.83, 3),
+                                        round(params['bracket_h'] * 1.17, 3)],
+                              'source': 'measured', 'why': '斗拱带只有几十像素，单线 ±10px 即 ±20%'}
+        if 'ridge_over_span' in ratios:
+            params['ridge_ratio'] = ratios['ridge_over_span']
+            trust['ridge_ratio'] = {'value': params['ridge_ratio'],
+                                    'range': [round(params['ridge_ratio'] * 0.85, 3),
+                                              round(params['ridge_ratio'] * 1.15, 3)],
+                                    'source': 'measured', 'why': '脊在立面之后，投影受进深影响，系统性偏'}
+        params['pitch'] = 0.33
+        trust['pitch'] = {'source': 'assumed', 'why': '正立面量不出坡度'}
+        if 'plat_h_over_col' in ratios and ratios['plat_h_over_col'] > 0.28:
+            warnings.append('台基高 = 柱高的 %.0f%%，不合常理：多半把「踏道底」当成地面线了。'
+                            '台基高应从台明上沿量到它自己脚下的地面（不含踏道）'
+                            % (ratios['plat_h_over_col'] * 100))
+            ratios.pop('plat_h_over_col', None)
+            ratios.pop('plat_h_over_total', None)
+        if 'plat_h_over_col' in ratios and colh:
+            params['plat_h'] = round(ratios['plat_h_over_col'] * colh, 2)
+            trust['plat_h'] = {'source': 'measured', 'why': '台基线对比强，±5%'}
+        if colh:
+            params['col_h'] = colh
+            trust['col_h'] = {'source': 'measured' if a.lines else 'assumed',
+                              'why': '人给的绝对值；照片只能给比值'}
+        else:
+            params['col_h'] = 4.6
+            trust['col_h'] = {'source': 'assumed', 'why': '未给 --col-h，按 4.6 m 占位'}
 
     fam = a.family
     if not fam:
@@ -320,7 +411,9 @@ def main():
         else:
             report['guess']['family'] = 'unknown'
             report['confidence']['family'] = 0.0
-            fam = 'ting'
+            fam = 'unknown'
+            warnings.append('形制没判出来，family 留成 unknown。请人眼看照片指定'
+                            ' family（ting/lang/dian/lou/ta/men/qiao）后再出图')
         report['guess']['eaves'] = 'unknown'
         report['confidence']['eaves'] = 0.0
         report['evidence'].append('檐数未判：照片里瓦垄与檐口同向，必须人眼数并排等距的檐口线')
@@ -332,8 +425,9 @@ def main():
         'title': '待定 · 构造关系轴测',
         'subtitle': '· 构造关系轴测',
         'desc': ['（形制待复核）', '透明画法：屋面为玻璃罩，被遮构件降为浅虚线。'],
-        'params': {},
-        '_analyze': report,
+        'params': params,
+        'trust': trust,
+        '_analyze': dict(report, warnings=warnings),
     }
     if a.out:
         with open(a.out, 'w', encoding='utf-8') as f:

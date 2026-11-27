@@ -1776,6 +1776,27 @@ BUILDERS = {'ting': build_ting, 'lang': build_lang, 'dian': build_dian,
 RATIOS = {'3:4': (2400, 3200), '4:3': (2400, 1800), '1:1': (2400, 2400), '9:16': (2160, 3840)}
 
 
+def _wrap(cv, text, font, maxw):
+    """按像素宽度折行（中文无空格，逐字量）。最多两行，超出加省略号。"""
+    lines, cur = [], ''
+    for ch in text:
+        if cv.dr.textlength(cur + ch, font=font) / S <= maxw:
+            cur += ch
+        else:
+            lines.append(cur)
+            cur = ch
+            if len(lines) == 2:
+                break
+    if cur and len(lines) < 2:
+        lines.append(cur)
+    used = ''.join(lines)
+    if len(used) < len(text) and lines:
+        while lines and cv.dr.textlength(lines[-1] + '…', font=font) / S > maxw:
+            lines[-1] = lines[-1][:-1]
+        lines[-1] += '…'
+    return lines
+
+
 def _rect(cv, x0, y0, x1, y1, fill=None, alpha=255, outline=None, lw=1.0):
     cv.poly([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], fill, outline, lw, alpha)
 
@@ -2015,9 +2036,14 @@ def render(job):
     cv.text(tx + tw + int(16 * ts), top + int(64 * ts),
             job.get('subtitle', '· 构造关系轴测'), f_sub, INK2)
     yy = top + int(168 * ts)
-    for line in job.get('desc', [])[:3]:
-        cv.text(tx, yy, line, f_desc, INK2)
-        yy += int(62 * ts)
+    # 可用宽度：有照片卡时让到它的左边，避免文字压上去被裁
+    avail = W - mr - tx
+    if job.get('photo'):
+        avail = (W - mr - int(ph * 0.8)) - tx - int(36 * ts)
+    for raw in job.get('desc', [])[:3]:
+        for line in _wrap(cv, raw, f_desc, avail):
+            cv.text(tx, yy, line, f_desc, INK2)
+            yy += int(62 * ts)
     if job.get('photo'):
         _photo_card(cv, job['photo'], W - mr, top + int(6 * ts) + ph, ph)
     cv.line([(mx, rule_y), (W - mr, rule_y)], WIRE, 1.0)
@@ -2044,6 +2070,19 @@ def render(job):
         cv.text(mx + int(30 * ts), chain_y - int(30 * ts), '传力路径', f_name, ACCENT_DEEP)
         cv.text(mx + int(30 * ts), chain_y + int(20 * ts),
                 clabel.replace('→', ' · '), f_note_cn, INK2)
+        tr = job.get('trust') or {}
+        if tr:
+            meas = sum(1 for v in tr.values() if isinstance(v, dict) and v.get('source') == 'measured')
+            est = len(tr) - meas
+            note = '比例：%d 项实测 · %d 项按常规' % (meas, est)
+            worst = max((v for v in tr.values() if isinstance(v, dict) and v.get('range')),
+                        key=lambda v: (v['range'][1] / max(1e-6, v['value'])),
+                        default=None)
+            if worst:
+                note += '（误差最大 %s，区间 %.2f–%.2f）' % (
+                    [k for k, v in tr.items() if v is worst][0],
+                    worst['range'][0], worst['range'][1])
+            cv.text(mx + int(30 * ts), chain_y + int(58 * ts), note, f_note_cn, INK4)
 
     # ── 图上编号 ─────────────────────────────────────────
     if cals:

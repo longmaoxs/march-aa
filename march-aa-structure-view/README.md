@@ -208,6 +208,26 @@ python scripts/structure_plate.py --json draft.json --out out/x.png
    否则下面的构件会被判成「被挡」而全部虚化，构造反而读不出来。
 3. **朱红配额**。只给：传力链、构件编号圈、檐口与戗脊这类主轮廓。多一笔就廉价。
 
+## 两条原则（v0.6 起）
+
+**① 四条线必须在同一个竖直平面里。**
+台明前棱比墙身面近 0.5–1 m，柱顶与檐口在墙身面，正脊更靠后——混着量等于默认正交投影，
+典型偏差 3–5%（柱高偏低、台基偏高），而且四点透视矫正也救不了（homography 只对单一平面成立）。
+所以 `analyze_photo.py` 有 `--base wall`：把第一条线换成**墙脚线**（墙面与台明的交线），四线同面。
+
+**② 数字要带可信度。**
+`--col-h 4.6 --ground-y 0.84 --span 0.12,0.88 --ridge 0.30,0.70` 之后，draft 会写 `params` 与 `trust`：
+
+```json
+"params": {"col_h": 4.6, "bracket_h": 0.276, "ridge_ratio": 0.519, "pitch": 0.33},
+"trust":  {"bracket_h": {"value": 0.276, "range": [0.229, 0.323], "source": "measured"}}
+```
+
+出图时这一行会印在图面上——「3 项实测 · 1 项按常规（误差最大 bracket_h，区间 0.23–0.32）」。
+量出来的和拍脑袋的，读者有权知道区别。
+
+跑回归：`python3 scripts/check.py`（11 个样本全渲一遍，逐条断言 QA 行为 OK）。
+
 ## 目录
 
 ```
