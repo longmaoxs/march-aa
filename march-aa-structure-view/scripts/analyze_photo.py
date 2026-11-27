@@ -15,11 +15,14 @@ import numpy as np
 from PIL import Image
 
 
-def load_gray(path, maxw=900):
+def load_gray(path, maxw=900, ret_box=False):
     im = Image.open(path).convert('L')
     if im.width > maxw:
         im = im.resize((maxw, int(im.height * maxw / im.width)), Image.LANCZOS)
-    return np.asarray(im, dtype=np.float32) / 255.0
+    g = np.asarray(im, dtype=np.float32) / 255.0
+    if ret_box:
+        return g, {'x0': 0.0, 'x1': 1.0}
+    return g
 
 
 def edge_energy(g):
@@ -124,18 +127,109 @@ def symmetry(g, box):
     return float((a * b).sum() / denom)
 
 
+
+# —— 矫正（roll / 四点透视） ——————————————————————————————
+
+def _line_angle(g, box, y0, y1, thr=0.02):
+    """在 [y0,y1] 窗口里逐列找最强竖直梯度，拟合水平线倾角（度）。g 为 0..1 灰度。"""
+    g = np.abs(np.diff(g, axis=0))
+    H, W = g.shape
+    x0, x1 = int(box['x0'] * W), int(box['x1'] * W)
+    win = g[int(y0 * H):int(y1 * H), x0:x1]
+    ys = []
+    for c in range(win.shape[1]):
+        col = win[:, c]
+        if col.max() < thr:
+            continue
+        ys.append(int(y0 * H) + int(np.argmax(col)))
+    if len(ys) < 20:
+        return None, 0
+    xs = np.arange(x0, x0 + len(ys))
+    k, _ = np.polyfit(xs, ys, 1)
+    return math.degrees(math.atan(k)), len(ys)
+
+
+def estimate_roll(g, box):
+    """取台基与檐口两条线倾角的中位数；返回 (角度, [(窗口, 角度)])。"""
+    got = []
+    for y0, y1 in ((0.66, 0.75), (0.46, 0.53)):
+        a, n = _line_angle(g, box, y0, y1)
+        if a is not None:
+            got.append(round(a, 2))
+    if not got:
+        return 0.0, []
+    return float(np.median(got)), got
+
+
+def apply_roll(im, deg):
+    """旋转拉平：deg 为检测到的倾角（y 随 x 增大而减小为正角），旋转方向取反。"""
+    return im.rotate(deg, resample=Image.BICUBIC, expand=False, fillcolor=(255, 255, 255))
+
+
+def homography(src, dst):
+    """四点透视：解 8 个系数，供 PIL PERSPECTIVE 用。src/dst 为 4 个 (x,y)。"""
+    A, b = [], []
+    for (x, y), (u, v) in zip(src, dst):
+        A.append([x, y, 1, 0, 0, 0, -u * x, -u * y]); b.append(u)
+        A.append([0, 0, 0, x, y, 1, -v * x, -v * y]); b.append(v)
+    h = np.linalg.solve(np.array(A, float), np.array(b, float))
+    return tuple(h.tolist())
+
+
+def apply_quad(im, quad, out_w=None, out_h=None):
+    """quad = 4 个归一化点（TL,TR,BR,BL），把这块四边形拉成正矩形。
+
+    纵向比值用不到真实长宽比：目标矩形取任意比例，等价于再乘一个各向异性缩放，
+    竖直方向的**比例**不变。所以 out_w/out_h 只要形状合理即可。
+    """
+    W, H = im.size
+    src = [(quad[i] * (W if i % 2 == 0 else H)) for i in range(8)]
+    src = list(zip(src[0::2], src[1::2]))
+    w = out_w or int((((src[1][0]-src[0][0])**2 + (src[1][1]-src[0][1])**2) ** .5 +
+                      ((src[2][0]-src[3][0])**2 + (src[2][1]-src[3][1])**2) ** .5) / 2)
+    h = out_h or int((((src[3][0]-src[0][0])**2 + (src[3][1]-src[0][1])**2) ** .5 +
+                      ((src[2][0]-src[1][0])**2 + (src[2][1]-src[1][1])**2) ** .5) / 2)
+    dst = [(0, 0), (w, 0), (w, h), (0, h)]
+    coeffs = homography(src, dst)
+    return im.transform((w, h), Image.PERSPECTIVE, coeffs, Image.BICUBIC)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--photo', required=True)
     ap.add_argument('--out', default=None)
     ap.add_argument('--family', default=None, help='已知家族就直接指定，脚本只量尺寸')
     ap.add_argument('--mark', default=None, help='把候选水平线画回照片，输出到这张图')
+    ap.add_argument('--rectify', default='roll', choices=['none', 'roll', 'quad'],
+                    help='取线前先矫正：roll=自动拉平（默认），quad=四点透视，none=不矫正')
+    ap.add_argument('--quad', default=None,
+                    help='--rectify quad 用的 4 个角（归一化，TL,TR,BR,BL），'
+                         '如 0.10,0.70,0.90,0.70,0.90,0.75,0.10,0.75')
     ap.add_argument('--lines', default=None,
                     help='人工确认的 4 条线：可给候选序号（如 10,9,7,6），'
                          '也可直接给归一化 y（带小数，如 0.703,0.542,0.492,0.416），'
                          '顺序均为 台基上沿,柱顶,檐口,正脊')
     a = ap.parse_args()
 
+    im_color = Image.open(a.photo).convert('RGB')
+    rect_info = {'mode': a.rectify}
+    if a.rectify != 'none':
+        g0, box0 = load_gray(a.photo, ret_box=True)
+        if a.rectify == 'roll':
+            ang, got = estimate_roll(g0, box0)
+            im_color = apply_roll(im_color, ang)
+            rect_info.update({'angle_deg': round(ang, 2), 'lines_deg': got})
+        else:
+            if not a.quad:
+                raise SystemExit('--rectify quad 需要 --quad（8 个归一化数）')
+            q = [float(t) for t in a.quad.split(',')]
+            if len(q) != 8:
+                raise SystemExit('--quad 需要 8 个数（TL,TR,BR,BL 的 x,y）')
+            im_color = apply_quad(im_color, q)
+            rect_info.update({'quad': q, 'size': list(im_color.size)})
+        tmp = '/tmp/_rectified.png'
+        im_color.save(tmp)
+        a.photo = tmp
     g = load_gray(a.photo)
     e = edge_energy(g)
     box = subject_box(e)
@@ -177,6 +271,7 @@ def main():
         'confidence': {},
         'evidence': [],
     }
+    report['measure']['rectified'] = rect_info
     report['measure']['bands'] = [{'i': i, 'y': y, 'strength': st}
                                   for i, (y, st) in enumerate(bands)]
 
