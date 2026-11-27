@@ -6,9 +6,9 @@ from PIL import Image
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import structure_plate as SP
 
-W, H = 2400, 1800
-TOP = int(H * 0.32)
-NOTE_W = int(W * 0.27)
+W, H = 1800, 2400          # 竖版：高宽比 4:3
+TOP = int(H * 0.35)
+NOTE_W = int(W * 0.34)
 
 
 def zc(pts):
@@ -94,7 +94,7 @@ def main():
     f_no = SP.font('num', F(34))
     f_hd = SP.font('hei', F(38))
     f_note = SP.font('hei', F(25))
-    nx = W - NOTE_W + int(6 * ts)
+    nx = W - NOTE_W + int(4 * ts)
     notes = job.get('explodeNotes') or [
         ('01', '屋顶 · 屋面', '庑殿/歇山/攒尖的坡面与瓦垄，挂在梁架与斗拱之上。'),
         ('02', '斗拱 · 额枋', '把屋面的荷载层层收拢，再交给柱子。'),

@@ -4,7 +4,7 @@ import argparse, sys
 from pathlib import Path
 from PIL import Image
 
-W, H = 2400, 1800
+W, H = 1800, 2400   # 竖版：高宽比 4:3
 TOP = int(H * 0.35)
 
 
