@@ -195,9 +195,21 @@ def _shade(n):
     return BODY_SIDE if (n[0] + n[1]) >= 0 else BODY_SIDE2
 
 
+_PART = [None]
+_PART_TARGET = [None]
+
+
+def part(name):
+    """设定当前正在生成的构件名，随后 _F 生成的面都会带上它。"""
+    _PART[0] = name
+    return name
+
+
 def _F(quad, kind='body', **kw):
     meta = dict(n=_norm(quad[0], quad[1], quad[2]) if len(quad) >= 3 else (0, 0, 1))
     meta.update(kw)
+    if _PART[0] and 'part' not in meta:
+        meta['part'] = _PART[0]
     return (tuple(quad), kind, meta)
 
 
@@ -245,6 +257,7 @@ def extrude(pts2d, z0, z1, kind='body'):
 
 
 def prism(cx, cy, r, z0, z1, n=12, rot=math.pi / 12, kind='body', r_top=None, slim=False):
+    _prev = _PART[0]; part('柱身')
     rt = r if r_top is None else r_top
     pts = [(cx + r * math.cos(rot + 2 * math.pi * i / n),
             cy + r * math.sin(rot + 2 * math.pi * i / n)) for i in range(n)]
@@ -257,12 +270,14 @@ def prism(cx, cy, r, z0, z1, n=12, rot=math.pi / 12, kind='body', r_top=None, sl
         q = ((pts[i][0], pts[i][1], z0), (pts[j][0], pts[j][1], z0),
              (top[j][0], top[j][1], z1), (top[i][0], top[i][1], z1))
         out.append(_F(q, kind, edge=0.0 if slim else None))
+    _PART[0] = _prev
     return out
 
 
 def column(cx, cy, z0, z1, r=0.13, base=True, kind='body', base_type='fupen',
            shaft='round'):
     """柱 + 柱础。base_type 见 components.md；shaft: round|octagon|square|suo"""
+    _prev = _PART[0]; part('柱础')
     if shaft == 'octagon':
         out = prism(cx, cy, r * 1.06, z0, z1, n=8, kind=kind, slim=True)
     elif shaft == 'square':
@@ -301,6 +316,7 @@ def column(cx, cy, z0, z1, r=0.13, base=True, kind='body', base_type='fupen',
                 px, py = cx + math.cos(a) * r * 1.28, cy + math.sin(a) * r * 1.28
                 out += _plank(px, py, math.cos(a), math.sin(a), 0.10, 0.05,
                               z0 + 0.03, z0 + 0.13, kind)
+    _PART[0] = _prev
     return out
 
 
@@ -354,6 +370,7 @@ def _perimeter(half, cps=2):
 def platform(cx, cy, hx, hy, h=0.45, steps=3, kind='mass', front='+y',
              step_style='chuídai'):
     """台基：一块方台 + 正面中点的踏跺（front 指定朝 +x / +y）。"""
+    _prev = _PART[0]; part('台基')
     out = box(cx - hx, cy - hy, 0.0, cx + hx, cy + hy, h, kind)
     sw = min((hx if front == '+y' else hy) * 0.62, 1.35)
     for i in range(steps):
@@ -369,11 +386,13 @@ def platform(cx, cy, hx, hy, h=0.45, steps=3, kind='mass', front='+y',
         else:
             out += box(cx + hx + t0, cy - sw + i * 0.10, 0.0,
                        cx + hx + t0 + 0.34, cy + sw - i * 0.10, zz + 0.02, kind)
+    _PART[0] = _prev
     return out
 
 
 def efang_set(pts2d, zt, eh, style='lan_e_pupai', kind='body'):
     """额枋体系。style: lan_e(只阑额)|lan_e_pupai(阑额+普拍枋)|e_fang(额枋+由额)|di_fu(加地栿)"""
+    _prev = _PART[0]; part('额枋')
     out = beam_ring(pts2d, zt, zt + eh, 0.12, kind)
     if style == 'lan_e_pupai':
         out += beam_ring(pts2d, zt + eh, zt + eh + 0.10, 0.17, kind)   # 普拍枋：更宽更扁
@@ -382,10 +401,12 @@ def efang_set(pts2d, zt, eh, style='lan_e_pupai', kind='body'):
         out += beam_ring(pts2d, zt + eh, zt + eh + 0.09, 0.15, kind)
     if style == 'di_fu':
         out += beam_ring(pts2d, zt - 0.55, zt - 0.45, 0.09, kind)     # 地栿
+    _PART[0] = _prev
     return out
 
 
 def railing(pts2d, z0, h=0.75, n=None, kind='body'):
+    _prev = _PART[0]; part('栏杆')
     out = []
     for i in range(len(pts2d)):
         a, b = pts2d[i], pts2d[(i + 1) % len(pts2d)]
@@ -401,11 +422,13 @@ def railing(pts2d, z0, h=0.75, n=None, kind='body'):
                    max(a[0], b[0]) + 0.06, max(a[1], b[1]) + 0.06, z0 + h, kind)
         out += box(min(a[0], b[0]) - 0.06, min(a[1], b[1]) - 0.06, z0 + 0.10,
                    max(a[0], b[0]) + 0.06, max(a[1], b[1]) + 0.06, z0 + h * 0.26, kind)
+    _PART[0] = _prev
     return out
 
 
 def beam_ring(pts2d, z0, z1, w=0.09, kind='body'):
     """沿多边形顶点依次连梁（额枋）。"""
+    _prev = _PART[0]; part('额枋')
     out = []
     m = len(pts2d)
     for i in range(m):
@@ -418,6 +441,7 @@ def beam_ring(pts2d, z0, z1, w=0.09, kind='body'):
         quad = [(a[0] + nx, a[1] + ny, z0), (a[0] - nx, a[1] - ny, z0),
                 (b[0] - nx, b[1] - ny, z0), (b[0] + nx, b[1] + ny, z0)]
         out += extrude(quad, z0, z1, kind)
+    _PART[0] = _prev
     return out
 
 
@@ -448,6 +472,7 @@ def lattice_panel(pts2d, z0, z1, step=0.22, kind='body'):
 
 def wall_ring(pts2d, z0, z1, sill=0.55, step=0.24, kind='body'):
     """墙体环：下段实墙 + 上段槛窗棂花。"""
+    _prev = _PART[0]; part('墙体')
     faces, lines = [], []
     m = len(pts2d)
     for i in range(m):
@@ -495,6 +520,7 @@ def _uv_bbox(model, zk=0.95):
 
 def brick_quad(p0, u, v, nu, nv, color=BRICK, w=0.62, stagger=True):
     """一块矩形面上的青灰砖缝：水平通缝 + 错缝竖缝。返回线表。"""
+    _prev = _PART[0]; part('砖石')
     lu = math.sqrt(u[0] ** 2 + u[1] ** 2 + u[2] ** 2) or 1.0
     lv = math.sqrt(v[0] ** 2 + v[1] ** 2 + v[2] ** 2) or 1.0
     u = (u[0] / lu, u[1] / lu, u[2] / lu)
@@ -523,6 +549,7 @@ def brick_quad(p0, u, v, nu, nv, color=BRICK, w=0.62, stagger=True):
             if a <= 0.02 or a >= nu - 0.02:
                 continue
             out.append(((P(a, b0), P(a, b1), color, 0.42), tag))
+    _PART[0] = _prev
     return out
 
 
@@ -554,6 +581,7 @@ def brick_tri(gx, ys, shz, ridge_z, course=0.24, color=BRICK):
 
 def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
     """斗拱。style: jixin(计心造,每跳加横栱) | touxin(偷心造,只出华栱) | yidou3sheng(一斗三升)"""
+    _prev = _PART[0]; part('斗拱')
     if style == 'xiegong':                 # 斜拱：45° 斜出的两跳
         import math as _m
         base = [(p[0], p[1], z0) for p in pts]
@@ -598,6 +626,7 @@ def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
                           reach * 1.1, 0.17, zz, zz + dz * 0.55, kind)
             if style != 'touxin':          # 计心造才有跳头横栱
                 out += _plank(x, y, tx, ty, 0.60, 0.15, zz, zz + dz * 0.5, kind)
+    _PART[0] = _prev
     return out
 
 
@@ -616,6 +645,7 @@ def _ral(nx, ny):
 def roof_pyramid(pts, eave_z, apex_z, apex=(0.0, 0.0), lift=0.62, bands=3, seg=8,
                  chu=0.34, kind='accent'):
     """任意边数攒尖：檐口中段平直、只在外端 48% 起翘。"""
+    _prev = _PART[0]; part('屋面')
     n = len(pts)
     ring, normals = [], []
     for i in range(n):
@@ -700,6 +730,7 @@ def roof_hip(x0, x1, yh, eave_z, tx0, tx1, ty, tz, bands=5, kind='accent', curve
     任意 t 处的水平截面是矩形 [x0t,x1t]×[-yt,yt]，四坡各由自家方向的边拼成，
     因此带与带之间天然连续；举折用 z = eave + (tz-eave)*t**curve（凹曲）。
     """
+    _prev = _PART[0]; part('屋面')
     faces, lines = [], []
 
     def L(a, b, t):
@@ -789,6 +820,7 @@ def roof_hip(x0, x1, yh, eave_z, tx0, tx1, ty, tz, bands=5, kind='accent', curve
 
 def roof_xieshan(x0, x1, yh, eave_z, rx0, rx1, ridge_z, sh=0.48, bands=3, kind='accent'):
     """歇山：下半庑殿收到肩部，上半两坡夹山花（0.20 厚薄板）。"""
+    _prev = _PART[0]; part('屋面')
     ys = yh * 0.48
     shz = eave_z + (ridge_z - eave_z) * sh
     faces, lines = roof_hip(x0, x1, yh, eave_z, rx0, rx1, ys, shz, bands=bands, kind=kind)
@@ -826,6 +858,7 @@ def roof_xieshan(x0, x1, yh, eave_z, rx0, rx1, ridge_z, sh=0.48, bands=3, kind='
 
 def roof_gable(x0, x1, yh, eave_z, ridge_z, bands=3, kind='accent'):
     """两坡顶（硬山/悬山共用）。"""
+    _prev = _PART[0]; part('屋面')
     faces, lines = [], []
     rows = [i / bands for i in range(bands + 1)]
     for i in range(bands):
@@ -854,6 +887,7 @@ def roof_gable(x0, x1, yh, eave_z, ridge_z, bands=3, kind='accent'):
 
 def roof_barrel(x0, x1, half, eave_z, rise, seg=8, kind='accent'):
     """卷棚：筒瓦两坡（无正脊）。"""
+    _prev = _PART[0]; part('屋面')
     faces, lines = [], []
     for i in range(seg):
         t0, t1 = i / seg, (i + 1) / seg
@@ -877,6 +911,7 @@ def roof_barrel(x0, x1, half, eave_z, rise, seg=8, kind='accent'):
 
 def ridge_box(x0, x1, z, h=0.30, chiwen=True, kind='body', orn=None):
     """正脊 + 脊饰。orn: none|chiwei(唐,鱼尾内卷)|chiwen(宋,兽头吞脊)|zhengwen(明清,带剑把)"""
+    _prev = _PART[0]; part('正脊')
     if orn is None:
         orn = 'chiwei' if chiwen else 'none'
     out = box(x0, -0.11, z, x1, 0.11, z + h, kind)
@@ -906,16 +941,19 @@ def ridge_box(x0, x1, z, h=0.30, chiwen=True, kind='body', orn=None):
         if orn == 'zhengwen':    # 剑把
             out += box(rx - 0.03, sgn * 0.02 - 0.02, z + h * 0.30 + H * 0.66,
                        rx + 0.03, sgn * 0.02 + 0.02, z + h * 0.30 + H * 1.06, kind)
+    _PART[0] = _prev
     return out
 
 
 def finial(cx, cy, z, scale=1.0, kind='body'):
     """宝顶：座 + 钵 + 相轮 + 宝珠。"""
+    _prev = _PART[0]; part('宝顶')
     s = scale
     out = box(cx - 0.30 * s, cy - 0.30 * s, z, cx + 0.30 * s, cy + 0.30 * s, z + 0.18 * s, kind)
     out += prism(cx, cy, 0.26 * s, z + 0.18 * s, z + 0.52 * s, n=14, r_top=0.13 * s, kind=kind)
     out += prism(cx, cy, 0.10 * s, z + 0.52 * s, z + 0.92 * s, n=12, kind=kind)
     out += prism(cx, cy, 0.13 * s, z + 0.92 * s, z + 1.06 * s, n=12, r_top=0.02 * s, kind=kind)
+    _PART[0] = _prev
     return out
 
 
@@ -1113,6 +1151,13 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
                   r_leg=21, r_mark=26, ts=1.0, marks_only=False):
     """图上编号标记（图例由 _legend_strip 画）。"""
     cals = list(model.get('callouts', []))
+    for c in cals:
+        pn = _part_of(c.get('label'))
+        if pn:
+            _PART_TARGET[0] = pn
+            hit = _anchor_for(model, c['at'])
+            if hit:
+                c['at'] = hit
     cals.sort(key=lambda c: -ax.pt(c['at'])[1])
     placed = [list(ax.pt(c['at'])) for c in cals]
     # 带引线的构件：把标记先拖到构件上方，再说避让
@@ -1161,6 +1206,45 @@ def draw_callouts(cv, model, ax, f_name, f_num, x_col=118, row_h=52, top=None,
 
 
 
+
+_PART_KEYS = (('台基', '台基'), ('踏跺', '台基'), ('踏道', '台基'), ('柱础', '柱础'),
+              ('额枋', '额枋'), ('阑额', '额枋'), ('墙', '墙体'), ('窗', '门窗'), ('门', '门窗'),
+              ('斗拱', '斗拱'), ('铺作', '斗拱'), ('金柱', '柱身'), ('柱', '柱身'),
+              ('屋面', '屋面'), ('四坡', '屋面'), ('翼角', '屋面'), ('正脊', '正脊'),
+              ('鸱尾', '正脊'), ('梁架', '梁架'), ('檩', '梁架'), ('椽', '梁架'),
+              ('宝顶', '宝顶'), ('栏杆', '栏杆'), ('拱券', '拱券'))
+
+
+def _part_of(label):
+    for k, v in _PART_KEYS:
+        if k in (label or ''):
+            return v
+    return None
+
+
+def _anchor_for(model, at):
+    """把标注点落到该构件自身「最近且朝向相机的一个面」的形心。"""
+    import math as _m
+    best, bd = None, 1e9
+    for fac in model.get('faces', []):
+        quad, kind, meta = _fs(fac)
+        pn = meta.get('part')
+        if not pn:
+            continue
+        if pn not in (_PART_TARGET[0],):
+            continue
+        n = meta.get('n') or _norm(quad[0], quad[1], quad[2])
+        if (n[0] + n[1] + n[2]) <= 0.10:      # 背对相机
+            continue
+        cx_ = sum(q[0] for q in quad) / len(quad)
+        cy_ = sum(q[1] for q in quad) / len(quad)
+        cz_ = sum(q[2] for q in quad) / len(quad)
+        d = _m.dist((cx_, cy_, cz_), at)
+        if d < bd:
+            bd, best = d, (cx_, cy_, cz_)
+    return best
+
+
 def _snap_visible(model, p, reach=3.2):
     """把标记点吸附到「最近的、朝向相机的面」的形心，保证标在看得见的一面。"""
     import math as _m
@@ -1198,6 +1282,7 @@ def truss_frame(xs, yh, z0, ridge_z, bw=0.15, kind='body', apex_of=None):
     apex_of(x) 给该榀的脊高：庑殿两山面那两榀不到脊，要收到撒头面上；
     不给就一律到 ridge_z。
     """
+    _prev = _PART[0]; part('梁架')
     out = []
     for x in xs:
         zt = ridge_z if apex_of is None else apex_of(x)
@@ -1205,6 +1290,7 @@ def truss_frame(xs, yh, z0, ridge_z, bw=0.15, kind='body', apex_of=None):
         out += _beam3((x, -yh, z0), (x, 0, zt), bw, kind)            # 南斜撑
         out += _beam3((x, yh, z0), (x, 0, zt), bw, kind)             # 北斜撑
         out += _beam3((x, 0, z0), (x, 0, zt), bw * 0.8, kind)        # 脊瓜柱
+    _PART[0] = _prev
     return out
 
 
@@ -1407,6 +1493,7 @@ def extrude_y(pts_xz, y0, y1, kind='body'):
 def arch_ring(cx, cz, R, t, a0, y0, y1, segs=18, alpha=74, kind='accent'):
     """券脸石环：按券石分块做成一个个四边形（PIL 填不了带洞的多边形，
     旧写法 `extrude_y(outer+reversed(inner))` 的端面会被填成实心圆盘，把券洞糊住）。"""
+    _prev = _PART[0]; part('拱券')
     faces, lines = [], []
     ang = [-a0 + 2.0 * a0 * j / segs for j in range(segs + 1)]
     def P(a, r, y):
@@ -1437,6 +1524,7 @@ def poly_ring(r, n=8, cx=0.0, cy=0.0, rot=math.pi / 8):
 
 def roof_ring(outer, z_out, inner, z_in, kind='accent', alpha=34):
     """腰檐：外圈檐口 → 内圈（收进并抬高）的环状坡。"""
+    _prev = _PART[0]; part('屋面')
     faces, lines = [], []
     n = len(outer)
     for i in range(n):
@@ -1557,6 +1645,7 @@ def build_dian(p):
                     continue
                 ln.append((((px, yf + 0.03, pz), (ax1, yf + 0.03, az1)), ACCENT_SOFT, 1.2, None))
                 px, pz = ax1, az1
+    part('门窗')
     for bx in (ci - 1, ci + 1):
         if 0 <= bx < bays:
             wx0, wx1 = xs[bx] + 0.45, xs[bx + 1] - 0.45
@@ -1807,7 +1896,8 @@ def build_ta(p):
         body = prism(0, 0, r * 0.80, z, zt, n=n, kind='body')
         f += body
         pts = poly_ring(r * 0.80, n)
-        # 门窗：每面一个内凹的板（门在下层、窗在上层），塔身才不是光筒
+        part('门窗')
+    # 门窗：每面一个内凹的板（门在下层、窗在上层），塔身才不是光筒
         rr = r * 0.80
         for j in range(n):
             a1 = math.pi / 8 + 2 * math.pi * j / n
