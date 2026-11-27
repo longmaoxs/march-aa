@@ -2397,7 +2397,7 @@ def render(job):
     # ── 比例尺 / 方印 / 注记 ──────────────────────────────
     bl = min(int(540 * ts), (x1 - x0) * 0.32)
     nseg = 4
-    bx, by = W - mr - bl, sig - int(46 * ts)
+    bx, by = W - mr - bl, sig - int(104 * ts)
     bh_ = max(6, int(8 * ts))
     for i in range(nseg):
         xx = bx + bl * i / nseg
@@ -2418,20 +2418,24 @@ def render(job):
         _mk = _mk.resize((seal, seal), _Img.LANCZOS)
         _S = cv.img.width / float(cv.w)
         _mk2 = _mk.resize((int(seal * _S), int(seal * _S)), _Img.LANCZOS)
-        cv.img.paste(_mk2, (int(mx * _S), int(sy * _S)), _mk2)
+        cv.img.paste(_mk2, (int((W - mr - seal) * _S), int(sy * _S)), _mk2)
     except Exception:
         _rect(cv, mx, sy, mx + seal, sy + seal, ACCENT)
         cv.text(mx + seal / 2, sy + seal / 2 - int(3 * ts),
                 (job.get('sign') or '构')[0], f_seal, PAPER, anchor='mm')
+    # 右下角：logo 组右对齐（图标在最右，两行文字在其左侧）
     f_brand = font('num', F(46))
-    cv.text(mx + seal + int(20 * ts), sy + seal * 0.36,
-            'march-aa', f_brand, INK, anchor='lm')
-    cv.text(mx + seal + int(20 * ts), sy + seal * 0.78,
-            '古建构造关系轴测 · structure view', font('hei', F(26)), INK3, anchor='lm')
-    cv.text(W - mr, sy + seal / 2, '东南向轴测 · 被遮构件降为浅虚线', f_note, INK4, anchor='rm')
+    _R = W - mr
+    _Rx = _R if not _dim_line(fam, par) else _R
+    cv.text(_Rx - seal - int(20 * ts), sy + seal * 0.34,
+            'march-aa', f_brand, INK, anchor='rm')
+    cv.text(_Rx - seal - int(20 * ts), sy + seal * 0.76,
+            '古建构造关系轴测 · structure view', font('hei', F(26)), INK3, anchor='rm')
     dl = _dim_line(fam, par)
     if dl:
-        cv.text(W - mr, sy + seal / 2 - int(34 * ts), dl, f_note, INK3, anchor='rm')
+        cv.text(mx, sy + seal / 2 - int(16 * ts), dl, f_note, INK3, anchor='lm')
+    cv.text(mx, sy + seal / 2 + int(20 * ts), '东南向轴测 · 被遮构件降为浅虚线',
+            f_note, INK4, anchor='lm')
 
     info = _qa(dict(x0=x0, y0=y0, x1=x1, y1=y1), (umin, vmin, umax, vmax),
                k, ox, oy, model, W, H, rule_y, photo, mx, maxlab, cv, f_name,
