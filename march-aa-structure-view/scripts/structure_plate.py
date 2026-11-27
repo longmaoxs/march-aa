@@ -1478,6 +1478,24 @@ def build_dian(p):
     dz0, dz1 = ph + 0.10, zt - 0.45
     f.append(_F(((dx0, yf, dz0), (dx1, yf, dz0), (dx1, yf, dz1), (dx0, yf, dz1)),
                 'mass', alpha=232, edge=1.2, edge_color=INK, fill=(126, 112, 104)))
+    if str((p.get('components') or {}).get('door', 'plain')) == 'studs':
+        for i in range(5):
+            for j in range(5):
+                sx = dx0 + (dx1 - dx0) * (0.16 + 0.17 * i)
+                sz = dz0 + (dz1 - dz0) * (0.60 + 0.09 * j)
+                ln.append((((sx - 0.045, yf + 0.02, sz), (sx + 0.045, yf + 0.02, sz)), INK3, 1.5, None))
+                ln.append((((sx, yf + 0.02, sz - 0.045), (sx, yf + 0.02, sz + 0.045)), INK3, 1.5, None))
+        cxd = (dx0 + dx1) / 2.0
+        for rr2 in (0.10, 0.16):
+            for k in range(13):
+                ang = 3.14159 * 2 * k / 12.0
+                ax1 = cxd + rr2 * __import__('math').cos(ang)
+                az1 = (dz0 + dz1) / 2.0 + rr2 * __import__('math').sin(ang)
+                if k == 0:
+                    px, pz = ax1, az1
+                    continue
+                ln.append((((px, yf + 0.03, pz), (ax1, yf + 0.03, az1)), ACCENT_SOFT, 1.2, None))
+                px, pz = ax1, az1
     for bx in (ci - 1, ci + 1):
         if 0 <= bx < bays:
             wx0, wx1 = xs[bx] + 0.45, xs[bx + 1] - 0.45
@@ -1509,6 +1527,24 @@ def build_dian(p):
                       (hw + _po - 0.18, hd + _po - 0.18), (-hw - _po + 0.18, hd + _po - 0.18)],
                      ph, 0.78)
     z1 = zt + _eh
+    ceil = str((p.get('components') or {}).get('ceiling', 'none'))
+    if ceil != 'none':
+        cz = zt - 0.28
+        if ceil == 'jingkou':
+            for i in range(bays + 1):
+                xx = xs[0] + (xs[-1] - xs[0]) * i / float(bays)
+                ln.append((((xx, -hd + 0.10, cz), (xx, hd - 0.10, cz)), INK3, 0.7, None))
+            for j in range(4):
+                yy = -hd + 0.10 + (2 * hd - 0.20) * (j + 0.5) / 4.0
+                ln.append((((-hw + 0.10, yy, cz), (hw - 0.10, yy, cz)), INK3, 0.7, None))
+            cal.append({'at': (0, -hd * 0.4, cz), 'label': '井口天花'})
+        else:
+            for k in range(4):
+                rr3 = min(hw, hd) * (0.62 - 0.14 * k)
+                pts = _square(0, 0, rr3)
+                pts.append(pts[0])
+                ln.append(([(x, y, cz + 0.06 * k) for x, y in pts], INK3, 0.7, None))
+            cal.append({'at': (0, 0, cz + 0.30), 'label': '藻井'})
     if br:
         _ox = hw + _po + 0.30
         _oy = hd + _po + 0.30

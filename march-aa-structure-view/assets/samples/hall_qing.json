@@ -28,7 +28,9 @@
    "steps": "yulu",
    "window": "zhizhai",
    "platform_base": "xumizuo",
-   "railing": "shilan"
+   "railing": "shilan",
+   "door": "studs",
+   "ceiling": "jingkou"
   }
  },
  "view": "axo",
