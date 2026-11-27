@@ -1738,7 +1738,7 @@ def build_dian(p):
     wf, wl = wall_ring(ring, ph, zt, sill=0.52, step=0.30)
     f += wf
     ln += wl
-    cal.append({'at': (0, -hd, zt + 0.16), 'label': '额枋'})
+    cal.append({'at': (0, hd, zt + 0.16), 'label': '额枋'})
     cal.append({'at': (-hw * 0.55, -hd, ph + 1.4),
                     'label': '墙体' + {'zhiling': '直棂窗', 'jian': '槛窗',
                                      'zhizhai': '支摘窗', 'lou': '漏窗'}.get(win, '槛窗')})
