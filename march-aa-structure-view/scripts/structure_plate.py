@@ -2540,7 +2540,7 @@ def render(job):
     for c in cals:
         maxlab = max(maxlab, cv.dr.textlength(c['label'], font=f_name) / S)
     r_leg = int(24 * ts)
-    row_h = int(62 * ts)
+    row_h = int(78 * ts)
     # 图例改到图的下方：先只占位，等版心算完再画
     clabel = None
     leg_top_y = None
@@ -2549,7 +2549,7 @@ def render(job):
     x0, x1 = mx, W - mr
     y0 = rule_y + int(30 * ts)
     sig = H - int(150 * ts)
-    y1 = sig - int(372 * ts)
+    y1 = sig - int(470 * ts)
     leg_top_y = y1 + int(34 * ts)
     conv_y = leg_top_y + 2 * row_h + int(26 * ts)
     leg_bottom = leg_top_y + 2 * row_h
