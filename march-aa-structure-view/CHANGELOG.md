@@ -200,3 +200,18 @@
 - **版式**：`_wrap()` 按像素宽逐字折行、最多两行；desc 让开右上角照片卡（之前「唐式鸱尾压在正脊两端」被裁掉）。
 - **可信度上图**：「传力路径」说明下加一行「比例：N 项实测 · M 项按常规（误差最大 X，区间 a–b）」。
 - **`scripts/check.py`**：11 个样本全渲一遍 + 断言 QA 行为 OK，一条命令看回归。
+
+## v0.7 · 构件类型
+
+新增 `params.components`，同一份 job 换类型即可画出不同时代的做法：
+
+```json
+"components": {"column_base": "fupen", "bracket": "touxin", "ridge_orn": "chiwei"}
+```
+
+- **柱础** `column_base`：`plain` 素平 / `fupen` 覆盆（唐，下宽上窄的浅盆）/ `lianban` 宝装莲瓣（宋，覆盆外 12 片瓣）/ `drum` 鼓镜（明清，鼓+方座）/ `xumizuo` 须弥座式。
+- **斗拱** `bracket`：`yidou3sheng` 一斗三升（无出跳）/ `touxin` 偷心造（跳头不设横栱，唐辽）/ `jixin` 计心造（每跳加横栱，宋清）。
+- **脊饰** `ridge_orn`：`chiwei` 鸱尾（唐，鱼尾内卷无兽头）/ `chiwen` 鸱吻（宋元，兽头吞脊）/ `zhengwen` 正吻（明清，龙形带剑把）/ `none`。
+- 标注自动带类型名：「柱础（覆盆式）」「斗拱（偷心造）」「正脊鸱尾（唐式）」。
+- 新增 `references/components.md`（96 行）：每类的画法要点、看图判别、时代倾向，含台基/踏道/柱身/额枋/梁架/屋面/门窗/天花。
+- 新增三个对照样本 `hall_tang|hall_song|hall_qing.json` 与 `docs/preview/components_column_base.png`（同一模型只换柱础）。

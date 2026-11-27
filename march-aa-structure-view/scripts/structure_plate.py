@@ -260,10 +260,37 @@ def prism(cx, cy, r, z0, z1, n=12, rot=math.pi / 12, kind='body', r_top=None, sl
     return out
 
 
-def column(cx, cy, z0, z1, r=0.13, base=True, kind='body'):
+def column(cx, cy, z0, z1, r=0.13, base=True, kind='body', base_type='fupen'):
+    """柱 + 柱础。base_type: plain|fupen|lianban|drum|xumizuo"""
     out = prism(cx, cy, r, z0, z1, n=12, kind=kind, slim=True)
-    if base:
-        out += box(cx - 0.19, cy - 0.19, z0, cx + 0.19, cy + 0.19, z0 + 0.10, kind)
+    if not base:
+        return out
+    if base_type == 'plain':
+        out += box(cx - r * 0.95, cy - r * 0.95, z0, cx + r * 0.95, cy + r * 0.95,
+                   z0 + 0.09, kind)
+    elif base_type == 'drum':
+        out += prism(cx, cy, r * 1.32, z0, z0 + 0.15, n=12, kind=kind, slim=True)
+        out += box(cx - r * 1.38, cy - r * 1.38, z0 - 0.02, cx + r * 1.38,
+                   cy + r * 1.38, z0 + 0.03, kind)
+    elif base_type == 'xumizuo':
+        out += box(cx - r * 1.55, cy - r * 1.55, z0, cx + r * 1.55, cy + r * 1.55,
+                   z0 + 0.09, kind)
+        out += prism(cx, cy, r * 1.18, z0 + 0.09, z0 + 0.19, n=12, kind=kind, slim=True)
+        out += box(cx - r * 1.45, cy - r * 1.45, z0 + 0.19, cx + r * 1.45,
+                   cy + r * 1.45, z0 + 0.26, kind)
+    else:  # fupen / lianban：倒扣的浅盆（下宽上窄）
+        prof = [(r * 1.52, z0), (r * 1.44, z0 + 0.05), (r * 1.20, z0 + 0.11),
+                (r * 1.02, z0 + 0.15)]
+        for i in range(len(prof) - 1):
+            r0, zz0 = prof[i]
+            r1, zz1 = prof[i + 1]
+            out += prism(cx, cy, (r0 + r1) * 0.5, zz0, zz1, n=12, kind=kind, slim=True)
+        if base_type == 'lianban':
+            for k in range(12):
+                a = 2 * math.pi * k / 12.0
+                px, py = cx + math.cos(a) * r * 1.28, cy + math.sin(a) * r * 1.28
+                out += _plank(px, py, math.cos(a), math.sin(a), 0.10, 0.05,
+                              z0 + 0.03, z0 + 0.13, kind)
     return out
 
 
@@ -478,8 +505,23 @@ def brick_tri(gx, ys, shz, ridge_z, course=0.24, color=BRICK):
     return out
 
 
-def bracket_set(pts, z0, z1, proj=0.32, kind='body'):
-    """斗拱：栌斗 + 三层横栱/出跳（沿边向外挑）。"""
+def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
+    """斗拱。style: jixin(计心造,每跳加横栱) | touxin(偷心造,只出华栱) | yidou3sheng(一斗三升)"""
+    if style == 'yidou3sheng':
+        out = []
+        h = z1 - z0
+        cx = sum(p[0] for p in pts) / float(len(pts))
+        cy = sum(p[1] for p in pts) / float(len(pts))
+        for (x, y) in pts:
+            out += box(x - 0.17, y - 0.17, z0, x + 0.17, y + 0.17, z0 + h * 0.62, kind)
+            vx, vy = x - cx, y - cy
+            L = math.hypot(vx, vy) or 1.0
+            vx, vy = vx / L, vy / L
+            tx, ty = -vy, vx
+            for d in (-0.34, 0.0, 0.34):
+                out += _plank(x + tx * d, y + ty * d, tx, ty, 0.26, 0.13,
+                              z0 + h * 0.62, z0 + h * 0.95, kind)
+        return out
     out = []
     h = (z1 - z0)
     dz = h / 4.6
@@ -496,8 +538,14 @@ def bracket_set(pts, z0, z1, proj=0.32, kind='body'):
             reach = proj * (0.42 + 0.29 * i)
             out += _plank(x + vx * reach * 0.45, y + vy * reach * 0.45, vx, vy,
                           reach * 1.1, 0.17, zz, zz + dz * 0.55, kind)
-            out += _plank(x, y, tx, ty, 0.60, 0.15, zz, zz + dz * 0.5, kind)
+            if style != 'touxin':          # 计心造才有跳头横栱
+                out += _plank(x, y, tx, ty, 0.60, 0.15, zz, zz + dz * 0.5, kind)
     return out
+
+
+BASE_NAME = {'plain': '素平', 'fupen': '覆盆式', 'lianban': '宝装莲瓣', 'drum': '鼓镜', 'xumizuo': '须弥座'}
+BRACKET_NAME = {'jixin': '三跳计心造', 'touxin': '偷心造', 'yidou3sheng': '一斗三升'}
+RIDGE_NAME = {'chiwei': '鸱尾（唐式）', 'chiwen': '鸱吻（宋式）', 'zhengwen': '正吻（明清式）', 'none': ''}
 
 
 def _ral(nx, ny):
@@ -768,22 +816,37 @@ def roof_barrel(x0, x1, half, eave_z, rise, seg=8, kind='accent'):
     return faces, lines
 
 
-def ridge_box(x0, x1, z, h=0.30, chiwen=True, kind='body'):
-    """正脊 + 吻兽。"""
+def ridge_box(x0, x1, z, h=0.30, chiwen=True, kind='body', orn=None):
+    """正脊 + 脊饰。orn: none|chiwei(唐,鱼尾内卷)|chiwen(宋,兽头吞脊)|zhengwen(明清,带剑把)"""
+    if orn is None:
+        orn = 'chiwei' if chiwen else 'none'
     out = box(x0, -0.11, z, x1, 0.11, z + h, kind)
-    if chiwen:
-        # 唐式鸱尾：上扬的鳍。轮廓画在 y-z 平面（沿脊方向），沿 x 挤出 0.13
-        for rx, sgn in ((x0, -1.0), (x1, 1.0)):
-            prof = [(0.0, 0.0), (0.34, 0.16), (0.46, 0.52), (0.40, 0.86),
-                    (0.22, 1.04), (0.02, 0.92), (-0.06, 0.56), (-0.04, 0.22)]
-            xa, xb = rx - 0.065, rx + 0.065
-            pts = [(sgn * yy, z + h * 0.35 + zz * 1.10) for yy, zz in prof]
-            out.append(_F(tuple((xa, py, pz) for py, pz in pts), kind))
-            out.append(_F(tuple((xb, py, pz) for py, pz in reversed(pts)), kind))
-            for i in range(len(pts)):
-                a, b = pts[i], pts[(i + 1) % len(pts)]
-                out.append(_F(((xa, a[0], a[1]), (xb, a[0], a[1]),
-                               (xb, b[0], b[1]), (xa, b[0], b[1])), kind))
+    if orn == 'none':
+        return out
+    H = h * 3.1 if orn != 'zhengwen' else h * 2.6
+    for rx, sgn in ((x0, -1.0), (x1, 1.0)):
+        if orn == 'chiwei':      # 唐：鱼尾形，尾尖向内卷，无兽头
+            prof = [(0.00, 0.00), (0.30, 0.14), (0.46, 0.46), (0.44, 0.80),
+                    (0.26, 1.00), (0.04, 0.94), (-0.10, 0.72), (-0.12, 0.34)]
+        elif orn == 'chiwen':    # 宋元：兽头张口吞脊，尾仍上卷、比头短
+            prof = [(0.00, 0.00), (0.05, 0.30), (0.02, 0.48), (0.16, 0.52),
+                    (0.34, 0.44), (0.44, 0.62), (0.36, 0.84), (0.16, 0.92),
+                    (-0.02, 0.76), (-0.08, 0.40)]
+        else:                    # 明清：龙形正吻，尾外卷、背上剑把
+            prof = [(0.00, 0.00), (0.18, 0.10), (0.34, 0.26), (0.40, 0.52),
+                    (0.34, 0.74), (0.20, 0.86), (0.04, 0.80), (-0.06, 0.56),
+                    (-0.04, 0.24)]
+        xa, xb = rx - 0.065, rx + 0.065
+        pts = [(sgn * yy, z + h * 0.30 + zz * H) for yy, zz in prof]
+        out.append(_F(tuple((xa, py, pz) for py, pz in pts), kind))
+        out.append(_F(tuple((xb, py, pz) for py, pz in reversed(pts)), kind))
+        for i in range(len(pts)):
+            a2, b2 = pts[i], pts[(i + 1) % len(pts)]
+            out.append(_F(((xa, a2[0], a2[1]), (xb, a2[0], a2[1]),
+                           (xb, b2[0], b2[1]), (xa, b2[0], b2[1])), kind))
+        if orn == 'zhengwen':    # 剑把
+            out += box(rx - 0.03, sgn * 0.02 - 0.02, z + h * 0.30 + H * 0.66,
+                       rx + 0.03, sgn * 0.02 + 0.02, z + h * 0.30 + H * 1.06, kind)
     return out
 
 
@@ -1311,6 +1374,9 @@ def roof_ring(outer, z_out, inner, z_in, kind='accent', alpha=34):
 
 def build_dian(p):
     style = p.get('style', 'xieshan')
+    cb = str(p.get('components', {}).get('column_base', 'fupen'))
+    bk = str(p.get('components', {}).get('bracket', 'jixin'))
+    ro = str(p.get('components', {}).get('ridge_orn', 'chiwei'))
     bays = int(p.get('bays', 5))
     bay = float(p.get('bay', 3.6))
     dbays = int(p.get('depth_bays', 3))
@@ -1324,6 +1390,7 @@ def build_dian(p):
     f += platform(0, 0, hw + _po, hd + _po, ph, 5)
     ln += brick_box_sides(-hw - _po, -hd - _po, hw + _po, hd + _po, 0.0, ph)
     cal.append({'at': (hw + 0.9, -1.0, ph * 0.6), 'label': '台基踏跺'})
+    cal.append({'at': (-hw + 0.35, -hd - 0.12, ph + 0.10), 'label': '柱础（' + BASE_NAME.get(cb, '覆盆式') + '）'})
 
     colh = float(p.get('col_h', 4.10))
     zt = ph + colh
@@ -1331,10 +1398,10 @@ def build_dian(p):
     ring = [(-hw, -hd), (hw, -hd), (hw, hd), (-hw, hd)]
     for x in xs:
         for y in (-hd, hd):
-            f += column(x, y, ph, zt, 0.16)
+            f += column(x, y, ph, zt, 0.16, base_type=cb)
     for y in (-hd, hd):
-        f += column(-hw, y, ph, zt, 0.16)
-        f += column(hw, y, ph, zt, 0.16)
+        f += column(-hw, y, ph, zt, 0.16, base_type=cb)
+        f += column(hw, y, ph, zt, 0.16, base_type=cb)
     _eh = float(p.get('efang_h', 0.32))
     f += beam_ring(ring, zt, zt + _eh, 0.12)
     wf, wl = wall_ring(ring, ph, zt, sill=0.52, step=0.30)
@@ -1368,14 +1435,14 @@ def build_dian(p):
                 + [(-hw, 0), (hw, 0)])
         bh = float(p.get('bracket_h', 0.42)) * colh      # 唐式斗拱：柱高的 3-4 成
         f += bracket_set(bpts, z1, z1 + bh, proj=float(p.get('bracket_proj', 0.55)))
-        cal.append({'at': (bay * 0.5, -hd, z1 + bh * 0.5), 'label': '斗拱'})
+        cal.append({'at': (bay * 0.5, -hd, z1 + bh * 0.5), 'label': '斗拱（' + BRACKET_NAME.get(bk, '计心造') + '）'})
         z1 += bh
 
     # 金柱与梁架
     ihw, ihd = hw - bay, hd - bayd * 0.5
     ip = [(-ihw, -ihd), (ihw, -ihd), (ihw, ihd), (-ihw, ihd)]
     for (x, y) in ip:
-        f += column(x, y, ph, z1, 0.17)
+        f += column(x, y, ph, z1, 0.17, base_type=cb)
     cal.append({'at': (ihw, ihd, z1 - 1.2), 'label': '金柱'})
 
     ey = hd + float(p.get('eave_out', 0.18)) * bays * bay
@@ -1384,9 +1451,9 @@ def build_dian(p):
         rf, rl = roof_gable(-hw, hw, ey, z1, ridge, bands=4)
         f += rf
         ln += rl
-        f += ridge_box(-hw, hw, ridge, 0.26, chiwen=bool(p.get('chiwen', True)))
+        f += ridge_box(-hw, hw, ridge, 0.26, orn=ro if p.get('chiwen', True) else 'none')
         cal.append({'at': (hw * 0.35, -ey * 0.5, z1 + 0.5), 'label': '两坡屋面'})
-        cal.append({'at': (-hw, 0, ridge + 0.8), 'label': '正脊吻兽'})
+        cal.append({'at': (-hw, 0, ridge + 0.8), 'label': '正脊' + RIDGE_NAME.get(ro, '鸱尾')})
         rr = ridge
     elif style == 'wudian':
         ridge = z1 + ey * float(p.get('pitch', 0.34))
@@ -1394,9 +1461,10 @@ def build_dian(p):
         rf, rl = roof_hip(-hw - 0.55, hw + 0.55, ey, z1, -hw * _rr, hw * _rr, 0.0, ridge, bands=4)
         f += rf
         ln += rl
-        f += ridge_box(-hw * _rr, hw * _rr, ridge, float(p.get('ridge_h', 0.26)), chiwen=bool(p.get('chiwen', True)))
+        f += ridge_box(-hw * _rr, hw * _rr, ridge, float(p.get('ridge_h', 0.26)), orn=ro if p.get('chiwen', True) else 'none')
         cal.append({'at': (hw * 0.3, -ey * 0.55, z1 + 0.6), 'label': '四坡屋面'})
         cal.append({'at': (-hw, -ey, z1), 'label': '翼角'})
+        cal.append({'at': (-hw * 0.92, 0, ridge + 0.42), 'label': '正脊' + RIDGE_NAME.get(ro, '鸱尾')})
         rr = ridge
     else:
         ridge = z1 + ey * float(p.get('pitch', 0.56))
@@ -1404,7 +1472,7 @@ def build_dian(p):
         rf, rl = roof_xieshan(-hw - 0.55, hw + 0.55, ey, z1, -hw + _ss, hw - _ss, ridge, bands=3)
         f += rf
         ln += rl
-        f += ridge_box(-hw + _ss, hw - _ss, ridge, float(p.get('ridge_h', 0.26)), chiwen=bool(p.get('chiwen', True)))
+        f += ridge_box(-hw + _ss, hw - _ss, ridge, float(p.get('ridge_h', 0.26)), orn=ro if p.get('chiwen', True) else 'none')
         cal.append({'at': (hw * 0.32, -ey * 0.5, z1 + 0.55), 'label': '歇山屋面'})
         cal.append({'at': (hw - 1.75, 0, z1 + 1.4), 'label': '山花'})
         rr = ridge

@@ -1,0 +1,30 @@
+{
+ "family": "dian",
+ "ratio": "3:4",
+ "photo": "/tmp/hall.jpg",
+ "title": "三间单檐大殿 · 清式",
+ "subtitle": "· 构造关系轴测",
+ "desc": [
+  "鼓镜柱础 · 斗拱计心造 · 正脊龙吻（尾外卷，背插剑把）",
+  "面阔三间、进深三间，当心间开门、两梢间开直棂窗。"
+ ],
+ "params": {
+  "style": "wudian",
+  "bays": 3,
+  "bay": 4.0,
+  "depth_bays": 3,
+  "bayd": 3.6,
+  "brackets": true,
+  "col_h": 4.6,
+  "bracket_h": 0.44,
+  "eave_out": 0.11,
+  "plat_h": 1.15,
+  "components": {
+   "column_base": "drum",
+   "bracket": "jixin",
+   "ridge_orn": "zhengwen"
+  }
+ },
+ "view": "axo",
+ "z_ratio": 0.82
+}
