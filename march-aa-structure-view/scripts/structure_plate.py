@@ -2287,7 +2287,7 @@ def render(job):
     # ── 版心：横向基本用满页宽 ────────────────────────────
     x0, x1 = mx, W - mr
     y0 = leg_bottom + int(30 * ts)
-    sig = H - int(96 * ts)
+    sig = H - int(150 * ts)
     y1 = sig - int(172 * ts)
     if y1 - y0 < 400 * ts:
         y1 = H - int(200 * ts)
@@ -2323,7 +2323,7 @@ def render(job):
     draw_model(cv, model, ax)
     draw_chain(cv, model, ax, f_num)
     _rect(cv, 0, 0, W, rule_y + 2, PAPER)
-    _rect(cv, 0, sig - int(132 * ts), W, H, PAPER)
+    _rect(cv, 0, sig - int(64 * ts), W, H, PAPER)
 
     # ── 标题块 ───────────────────────────────────────────
     _rect(cv, mx, top, mx + int(16 * ts), top + int(150 * ts), ACCENT)
@@ -2397,7 +2397,7 @@ def render(job):
     # ── 比例尺 / 方印 / 注记 ──────────────────────────────
     bl = min(int(540 * ts), (x1 - x0) * 0.32)
     nseg = 4
-    bx, by = W - mr - bl, sig - int(104 * ts)
+    bx, by = mx, sig + int(10 * ts)
     bh_ = max(6, int(8 * ts))
     for i in range(nseg):
         xx = bx + bl * i / nseg
@@ -2410,7 +2410,7 @@ def render(job):
 
     # 左下角：换成 march-aa 的「亭」标识（assets/brand/mark.png），字也随之放大
     seal = int(84 * ts)
-    sy = sig + int(6 * ts)
+    sy = sig + int(4 * ts)
     try:
         from PIL import Image as _Img
         _mk = _Img.open(str(__import__('pathlib').Path(__file__).resolve().parent.parent
@@ -2431,11 +2431,12 @@ def render(job):
             'march-aa', f_brand, INK, anchor='rm')
     cv.text(_Rx - seal - int(20 * ts), sy + seal * 0.76,
             '古建构造关系轴测 · structure view', font('hei', F(26)), INK3, anchor='rm')
-    dl = _dim_line(fam, par)
-    if dl:
-        cv.text(mx, sy + seal / 2 - int(16 * ts), dl, f_note, INK3, anchor='lm')
-    cv.text(mx, sy + seal / 2 + int(20 * ts), '东南向轴测 · 被遮构件降为浅虚线',
-            f_note, INK4, anchor='lm')
+    _dl = _dim_line(fam, par)
+    _ty = sig - int(96 * ts)
+    if _dl:
+        cv.text(mx, _ty, _dl, f_note, INK3, anchor='lm')
+        _ty += int(34 * ts)
+    cv.text(mx, _ty, '东南向轴测 · 被遮构件降为浅虚线', f_note, INK4, anchor='lm')
 
     info = _qa(dict(x0=x0, y0=y0, x1=x1, y1=y1), (umin, vmin, umax, vmax),
                k, ox, oy, model, W, H, rule_y, photo, mx, maxlab, cv, f_name,
