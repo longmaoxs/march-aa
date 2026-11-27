@@ -1,0 +1,35 @@
+{
+ "family": "dian",
+ "ratio": "3:4",
+ "view": "axo",
+ "z_ratio": 0.82,
+ "photo": "/tmp/hall.jpg",
+ "meta": {
+  "title": "三间单檐大殿 · 按规则",
+  "subtitle": "· 构造关系轴测",
+  "desc": [
+   "面阔三间、进深三间，当心间开门、两梢间开直棂窗。",
+   "檐出深远、斗拱层厚；唐式鸱尾压在正脊两端。"
+  ]
+ },
+ "params": {
+  "style": "wudian",
+  "bays": 3,
+  "bay": 4.0,
+  "depth_bays": 3,
+  "bayd": 3.6,
+  "brackets": true,
+  "chiwen": true,
+  "col_h": 4.1,
+  "bracket_h": 0.42,
+  "plat_h": 0.55,
+  "pitch": 0.34,
+  "ridge_ratio": 0.55
+ },
+ "title": "三间单檐大殿 · 按规则",
+ "subtitle": "· 构造关系轴测",
+ "desc": [
+  "面阔三间、进深三间，当心间开门、两梢间开直棂窗。",
+  "檐出深远、斗拱层厚；唐式鸱尾压在正脊两端。"
+ ]
+}

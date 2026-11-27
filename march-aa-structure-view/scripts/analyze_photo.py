@@ -63,6 +63,53 @@ def hline_count(g, box, min_frac=0.75, gap_frac=0.05):
     return len(peaks), [round((y0 + p) / g.shape[0], 3) for p in peaks]
 
 
+def detect_bands(g, box, top_n=12, min_frac=0.35):
+    """找主体里的水平结构线（台基上沿 / 额枋 / 檐口 / 正脊 / 鸱尾尖）。
+
+    做法：只看主体中间 70% 宽（避开树、配楼），逐行统计「暗像素 + 竖直梯度」，
+    取峰值并合并相邻 1.5% 图高的峰，返回 [(归一化 y, 强度)] 由强到弱。
+    """
+    x0, y0, x1, y1 = box
+    w = x1 - x0
+    cx0, cx1 = int(x0 + w * 0.15), int(x0 + w * 0.85)
+    sub = g[y0:y1, cx0:cx1]
+    dark = (sub < np.percentile(sub, 35)).astype(np.float32)
+    grad = np.abs(np.diff(sub, axis=0, prepend=sub[:1, :]))
+    score = dark.sum(axis=1) / max(1, sub.shape[1]) + grad.mean(axis=1) * 4.0
+    # 平滑，避免瓦垄这种高频纹理把峰打散
+    k = np.ones(5) / 5.0
+    score = np.convolve(score, k, mode='same')
+    thr = score.max() * min_frac
+    peaks = []
+    for i in range(1, len(score) - 1):
+        if score[i] >= thr and score[i] >= score[i - 1] and score[i] > score[i + 1]:
+            peaks.append((i, float(score[i])))
+    peaks.sort(key=lambda t: -t[1])
+    keep = []
+    min_gap = max(4, int(sub.shape[0] * 0.015))
+    for i, v in peaks:
+        if all(abs(i - j) > min_gap for j, _ in keep):
+            keep.append((i, v))
+        if len(keep) >= top_n:
+            break
+    keep.sort(key=lambda t: t[0])
+    return [((y0 + i) / g.shape[0], round(v / (score.max() or 1), 2)) for i, v in keep]
+
+
+def draw_bands(src, box, bands, out):
+    """把候选线画回照片，带序号 —— 人眼确认哪条是哪条。"""
+    from PIL import ImageDraw
+    im = Image.open(src).convert('RGB')
+    d = ImageDraw.Draw(im)
+    x0, y0b, x1, y1b = box
+    for k, (yn, st) in enumerate(bands):
+        y = int(yn * im.height)
+        d.line([(0, y), (im.width, y)], fill=(200, 40, 40), width=max(1, im.width // 500))
+        d.text((8, y - 14), str(k), fill=(200, 40, 40))
+    d.rectangle([x0, y0b, x1, y1b], outline=(40, 120, 200), width=max(1, im.width // 500))
+    im.save(out)
+
+
 def symmetry(g, box):
     x0, y0, x1, y1 = box
     sub = g[y0:y1, x0:x1]
@@ -82,6 +129,11 @@ def main():
     ap.add_argument('--photo', required=True)
     ap.add_argument('--out', default=None)
     ap.add_argument('--family', default=None, help='已知家族就直接指定，脚本只量尺寸')
+    ap.add_argument('--mark', default=None, help='把候选水平线画回照片，输出到这张图')
+    ap.add_argument('--lines', default=None,
+                    help='人工确认的 4 条线：可给候选序号（如 10,9,7,6），'
+                         '也可直接给归一化 y（带小数，如 0.703,0.542,0.492,0.416），'
+                         '顺序均为 台基上沿,柱顶,檐口,正脊')
     a = ap.parse_args()
 
     g = load_gray(a.photo)
@@ -96,6 +148,9 @@ def main():
     ground = float(np.percentile(rows, 10))
     n_line, line_pos = hline_count(g, box)
     sym = symmetry(g, box)
+    bands = detect_bands(g, box)
+    if a.mark:
+        draw_bands(a.photo, box, bands, a.mark)
 
     report = {
         'photo': a.photo,
@@ -122,6 +177,37 @@ def main():
         'confidence': {},
         'evidence': [],
     }
+    report['measure']['bands'] = [{'i': i, 'y': y, 'strength': st}
+                                  for i, (y, st) in enumerate(bands)]
+
+    # —— 按照片量比例 ——
+    # 四条线（y 向下增大）：台基上沿 / 柱顶（斗拱下）/ 檐口下沿 / 正脊
+    if a.lines:
+        toks = [t.strip() for t in a.lines.split(',') if t.strip()]
+        if len(toks) != 4:
+            raise SystemExit('--lines 需要 4 个值（台基上沿,柱顶,檐口,正脊）')
+        if any('.' in t for t in toks):
+            ybase, ycol, yeave, yridge = [float(t) for t in toks]
+        else:
+            idx = [int(t) for t in toks]
+            if max(idx) >= len(bands):
+                raise SystemExit('序号越界：只有 %d 条候选线' % len(bands))
+            ybase, ycol, yeave, yridge = [bands[i][0] for i in idx]
+        if not (yridge < yeave < ycol < ybase):
+            raise SystemExit('顺序不对：需要 正脊 < 檐口 < 柱顶 < 台基上沿（y 向下增大）')
+        tot = ybase - yridge          # 台基上沿 → 正脊（不含台基）
+        col = ybase - ycol
+        brk = ycol - yeave
+        roof = yeave - yridge
+        report['measure']['ratios'] = {
+            'col_over_total': round(col / tot, 3),
+            'bracket_over_total': round(brk / tot, 3),
+            'roof_over_total': round(roof / tot, 3),
+            'bracket_over_col': round(brk / col, 3),
+            'roof_over_col': round(roof / col, 3),
+            'span_px': round(tot, 4),
+            'note': '占「台基上沿→正脊」的比例；bracket_over_col 可直接当 job 的 bracket_h',
+        }
 
     fam = a.family
     if not fam:

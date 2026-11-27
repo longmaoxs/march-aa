@@ -1320,8 +1320,9 @@ def build_dian(p):
     hw, hd = bays * bay / 2.0, dbays * bayd / 2.0
     f, ln, cal = [], [], []
     ph = float(p.get('plat_h', 0.55))
-    f += platform(0, 0, hw + 0.75, hd + 0.75, ph, 5)
-    ln += brick_box_sides(-hw - 0.75, -hd - 0.75, hw + 0.75, hd + 0.75, 0.0, ph)
+    _po = float(p.get('plat_out', 0.75))
+    f += platform(0, 0, hw + _po, hd + _po, ph, 5)
+    ln += brick_box_sides(-hw - _po, -hd - _po, hw + _po, hd + _po, 0.0, ph)
     cal.append({'at': (hw + 0.9, -1.0, ph * 0.6), 'label': '台基踏跺'})
 
     colh = float(p.get('col_h', 4.10))
@@ -1334,7 +1335,8 @@ def build_dian(p):
     for y in (-hd, hd):
         f += column(-hw, y, ph, zt, 0.16)
         f += column(hw, y, ph, zt, 0.16)
-    f += beam_ring(ring, zt, zt + 0.32, 0.12)
+    _eh = float(p.get('efang_h', 0.32))
+    f += beam_ring(ring, zt, zt + _eh, 0.12)
     wf, wl = wall_ring(ring, ph, zt, sill=0.52, step=0.30)
     f += wf
     ln += wl
@@ -1358,14 +1360,14 @@ def build_dian(p):
                 xx = wx0 + (wx1 - wx0) * k / 9.0
                 ln.append((((xx, yf, wz0 + 0.05), (xx, yf, wz1 - 0.05)), INK3, 0.8, None))
 
-    z1 = zt + 0.32
+    z1 = zt + _eh
     if br:
         mid = [(xs[i] + xs[i + 1]) / 2.0 for i in range(bays)]
         bpts = ([(x, -hd) for x in xs] + [(x, hd) for x in xs]
                 + [(x, -hd) for x in mid] + [(x, hd) for x in mid]
                 + [(-hw, 0), (hw, 0)])
         bh = float(p.get('bracket_h', 0.42)) * colh      # 唐式斗拱：柱高的 3-4 成
-        f += bracket_set(bpts, z1, z1 + bh, proj=0.55)
+        f += bracket_set(bpts, z1, z1 + bh, proj=float(p.get('bracket_proj', 0.55)))
         cal.append({'at': (bay * 0.5, -hd, z1 + bh * 0.5), 'label': '斗拱'})
         z1 += bh
 
@@ -1378,7 +1380,7 @@ def build_dian(p):
 
     ey = hd + float(p.get('eave_out', 0.18)) * bays * bay
     if style == 'yingshan':
-        ridge = z1 + hd * 0.62
+        ridge = z1 + hd * float(p.get('pitch', 0.62))
         rf, rl = roof_gable(-hw, hw, ey, z1, ridge, bands=4)
         f += rf
         ln += rl
@@ -1387,20 +1389,22 @@ def build_dian(p):
         cal.append({'at': (-hw, 0, ridge + 0.8), 'label': '正脊吻兽'})
         rr = ridge
     elif style == 'wudian':
-        ridge = z1 + ey * 0.34
-        rf, rl = roof_hip(-hw - 0.55, hw + 0.55, ey, z1, -hw * 0.55, hw * 0.55, 0.0, ridge, bands=4)
+        ridge = z1 + ey * float(p.get('pitch', 0.34))
+        _rr = float(p.get('ridge_ratio', 0.55))
+        rf, rl = roof_hip(-hw - 0.55, hw + 0.55, ey, z1, -hw * _rr, hw * _rr, 0.0, ridge, bands=4)
         f += rf
         ln += rl
-        f += ridge_box(-hw * 0.55, hw * 0.55, ridge, 0.26, chiwen=bool(p.get('chiwen', True)))
+        f += ridge_box(-hw * _rr, hw * _rr, ridge, float(p.get('ridge_h', 0.26)), chiwen=bool(p.get('chiwen', True)))
         cal.append({'at': (hw * 0.3, -ey * 0.55, z1 + 0.6), 'label': '四坡屋面'})
         cal.append({'at': (-hw, -ey, z1), 'label': '翼角'})
         rr = ridge
     else:
-        ridge = z1 + ey * 0.56
-        rf, rl = roof_xieshan(-hw - 0.55, hw + 0.55, ey, z1, -hw + 1.75, hw - 1.75, ridge, bands=3)
+        ridge = z1 + ey * float(p.get('pitch', 0.56))
+        _ss = float(p.get('shoushan', 1.75))
+        rf, rl = roof_xieshan(-hw - 0.55, hw + 0.55, ey, z1, -hw + _ss, hw - _ss, ridge, bands=3)
         f += rf
         ln += rl
-        f += ridge_box(-hw + 1.75, hw - 1.75, ridge, 0.26, chiwen=bool(p.get('chiwen', True)))
+        f += ridge_box(-hw + _ss, hw - _ss, ridge, float(p.get('ridge_h', 0.26)), chiwen=bool(p.get('chiwen', True)))
         cal.append({'at': (hw * 0.32, -ey * 0.5, z1 + 0.55), 'label': '歇山屋面'})
         cal.append({'at': (hw - 1.75, 0, z1 + 1.4), 'label': '山花'})
         rr = ridge

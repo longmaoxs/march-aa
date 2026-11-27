@@ -94,3 +94,17 @@
 - [ ] 没有构件穿出体量（屋架穿屋面、屋面穿斗拱、斗拱悬空）
 - [ ] 朱红只出现在：传力链、编号圈、檐口/戗脊、鸱尾
 - [ ] QA 行是 `OK`，主体没有压到标题/照片/页脚
+
+## 22. 版式字段在 job 顶层，不在 meta 里
+
+`render()` 读的是 `job['title'] / job['subtitle'] / job['desc']`（`structure_plate.py` 里 `job.get('title','')`），
+`job['meta']` 只是给人和脚本看的备份。只写 `meta.title` 会渲出一张**没有标题**的图——而且不报错。
+新写 job 时两处都写，或者干脆只用顶层。
+
+## 23. 比例要么量，要么标"默认"
+
+`build_dian` 里所有比例都能被 `params` 覆盖：`col_h` `bracket_h` `bracket_proj` `plat_h` `plat_out`
+`pitch` `ridge_ratio` `ridge_h` `shoushan` `efang_h`。默认值只是"唐构常规"，**不是照片测量结果**。
+给真实照片画图时，先跑 `analyze_photo.py --mark bands.png` 看候选线，人工确认四条线后
+`--lines 0.703,0.542,0.492,0.416` 得到 `bracket_over_col` 等比值，再写进 job。
+正立面照片量不出举高（坡度）与出檐（进深方向被压缩），这两项必须标"估"。
