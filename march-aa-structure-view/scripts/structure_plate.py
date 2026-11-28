@@ -595,14 +595,16 @@ def brick_tri(gx, ys, shz, ridge_z, course=0.24, color=BRICK):
 
 
 def _band_half(x, y, tx, ty, pts):
-    """横栱半长：取同排相邻斗拱间距的一半，使整排横栱首尾相接成连续横带。"""
-    pr = sorted((px * tx + py * ty) for (px, py) in pts)
-    p0 = x * tx + y * ty
-    i = min(range(len(pr)), key=lambda j: abs(pr[j] - p0))
-    left = pr[i] - pr[i - 1] if i > 0 else 0.0
-    right = pr[i + 1] - pr[i] if i + 1 < len(pr) else 0.0
-    half = max(0.44, 0.5 * max(left, right))
-    return half
+    """横栱半长：取同一排相邻斗拱间距的一半，使整排横栱首尾相接成连续横带。
+
+    不讲切线——切向在转角处是斜的，按切线筛选会把同排点滤掉。直接取
+    「最近邻距离」当柱距/补间距：同排最近，跨排（两个檐线之间）远得多。
+    """
+    d = [math.hypot(px - x, py - y) for (px, py) in pts]
+    d = [v for v in d if v > 0.25]
+    if not d:
+        return 0.44
+    return max(0.44, min(2.4, min(d) * 0.50))
 
 
 def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
@@ -644,6 +646,12 @@ def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
         L = math.hypot(vx, vy) or 1.0
         vx, vy = vx / L, vy / L
         tx, ty = -vy, vx
+        # 横栱方向吸附到主坐标轴：檐线是直的一排，切向若按「指向形心」算会带斜，
+        # 长横栱就会斜着穿过去。
+        if abs(tx) >= abs(ty):
+            tx, ty = (1.0 if tx >= 0 else -1.0), 0.0
+        else:
+            tx, ty = 0.0, (1.0 if ty >= 0 else -1.0)
         out += box(x - 0.16, y - 0.16, z0, x + 0.16, y + 0.16, z0 + dz * 1.4, kind)
         for i in range(3):
             zz = z0 + dz * (1.4 + i * 1.0)
@@ -651,7 +659,8 @@ def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
             out += _plank(x + vx * reach * 0.45, y + vy * reach * 0.45, vx, vy,
                           reach * 1.1, 0.17, zz, zz + dz * 0.55, kind)
             if style != 'touxin':          # 计心造才有跳头横栱
-                out += _plank(x, y, tx, ty, _band_half(x, y, tx, ty, pts), 0.15,
+                # _plank 的 length 是全长；_band_half 给的是半跨，这里乘 2 让相邻横栱相接
+                out += _plank(x, y, tx, ty, 2.0 * _band_half(x, y, tx, ty, pts) * 0.98, 0.15,
                               zz, zz + dz * 0.5, kind)
     _PART[0] = _prev
     return out
