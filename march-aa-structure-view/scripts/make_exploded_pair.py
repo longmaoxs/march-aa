@@ -90,7 +90,7 @@ def main():
     bw, bh = max(1e-6, umax - umin), max(1e-6, vmax - vmin)
     k = min((x1 - x0) / bw, (y1 - y0) / bh)
     ox = x0 - k * umin + ((x1 - x0) - k * bw) * 0.5
-    oy = y0 - k * vmin + ((y1 - y0) - k * bh) * 0.5
+    oy = y0 - k * vmin + ((y1 - y0) - k * bh) * float(job.get('explodeY', 0.5))
     ax = SP.Axo(k=k, zk=float(job.get('z_ratio', 0.95)), ox=ox, oy=oy)
     SP.draw_model(cv, model2, ax)
 
