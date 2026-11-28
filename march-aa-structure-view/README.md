@@ -248,8 +248,10 @@ python scripts/structure_plate.py --json draft.json --out out/x.png
 │   ├── samples/              # 19 个可跑的 job.json
 │   ├── brand/                # logo（svg / png）
 │   └── fonts/                # 霞鹜文楷（OFL）
-└── out/                      # 示例成图
+└── out/                      # 本地出图（已 gitignore，不进仓库）
 ```
+
+> 示例成图不放在仓库里，见 `docs/preview/`；`out/` 是本地跑出来的输出目录，已被 `.gitignore` 忽略。
 
 ## 现在做到哪了（v0.7）
 
