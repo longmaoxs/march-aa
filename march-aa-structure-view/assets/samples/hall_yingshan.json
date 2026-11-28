@@ -1,36 +1,78 @@
 {
- "family": "dian",
- "ratio": "3:4",
- "photo": "/tmp/hall.jpg",
- "title": "三间悬山民居",
- "subtitle": "· 构造关系轴测",
- "desc": [
-  "悬山两坡，博风板收头、悬鱼垂脊端。",
-  "漏窗菱格，斗拱斜出。"
- ],
- "params": {
-  "style": "yingshan",
-  "bays": 3,
-  "bay": 4.0,
-  "depth_bays": 3,
-  "bayd": 3.6,
-  "brackets": true,
-  "col_h": 4.6,
-  "bracket_h": 0.44,
-  "eave_out": 0.11,
-  "plat_h": 1.15,
-  "components": {
-   "column_base": "lianban",
-   "bracket": "xiegong",
-   "ridge_orn": "chiwen",
-   "column_shaft": "round",
-   "arch_beam": "lan_e_pupai",
-   "steps": "chuídai",
-   "window": "lou",
-   "platform_base": "plain",
-   "railing": "none"
+  "family": "dian",
+  "ratio": "3:4",
+  "photo": "/tmp/hall.jpg",
+  "title": "三间悬山民居",
+  "subtitle": "· 构造关系轴测",
+  "desc": [
+    "悬山两坡，博风板收头、悬鱼垂脊端。",
+    "漏窗菱格，斗拱斜出。"
+  ],
+  "params": {
+    "style": "yingshan",
+    "bays": 3,
+    "bay": 4.0,
+    "depth_bays": 3,
+    "bayd": 3.6,
+    "brackets": true,
+    "col_h": 4.6,
+    "bracket_h": 0.44,
+    "eave_out": 0.11,
+    "plat_h": 1.15,
+    "components": {
+      "column_base": "lianban",
+      "bracket": "xiegong",
+      "ridge_orn": "chiwen",
+      "column_shaft": "round",
+      "arch_beam": "lan_e_pupai",
+      "steps": "chuídai",
+      "window": "lou",
+      "platform_base": "plain",
+      "railing": "none"
+    }
+  },
+  "view": "axo",
+  "z_ratio": 0.82,
+  "callout_xy": {
+    "台基踏跺": [
+      0.759,
+      0.646
+    ],
+    "柱础（宝装莲瓣）": [
+      0.257,
+      0.596
+    ],
+    "额枋": [
+      0.323,
+      0.518
+    ],
+    "墙体漏窗": [
+      0.569,
+      0.395
+    ],
+    "斗拱（斜拱）": [
+      0.761,
+      0.343
+    ],
+    "金柱": [
+      0.257,
+      0.541
+    ],
+    "两坡屋面": [
+      0.679,
+      0.36
+    ],
+    "正脊鸱吻（宋式）": [
+      0.304,
+      0.208
+    ],
+    "博风板 · 悬鱼": [
+      0.697,
+      0.408
+    ],
+    "梁架": [
+      0.566,
+      0.379
+    ]
   }
- },
- "view": "axo",
- "z_ratio": 0.82
 }

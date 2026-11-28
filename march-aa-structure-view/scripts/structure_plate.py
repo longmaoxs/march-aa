@@ -52,6 +52,7 @@ _KIND_W = {'body': 1.0, 'screen': 0.8, 'accent': 1.2}
 
 FONT_CANDIDATES = {
     'kai': ['assets/fonts/LXGWWenKai-Regular.ttf',
+            '~/.cache/march-aa/LXGWWenKai-Regular.ttf',
             '/System/Library/Fonts/Supplemental/Songti.ttc',
             '/usr/share/fonts/truetype/arphic/ukai.ttc'],
     'hei': ['/System/Library/Fonts/STHeiti Medium.ttc',
@@ -72,7 +73,12 @@ def _pick_font(kind):
     if kind in _FONTS:
         return _FONTS[kind]
     for path in FONT_CANDIDATES.get(kind, []):
-        cand = path if os.path.isabs(path) else os.path.join(_HERE, path)
+        if path.startswith('~'):
+            cand = os.path.expanduser(path)
+        elif os.path.isabs(path):
+            cand = path
+        else:
+            cand = os.path.join(_HERE, path)
         if os.path.exists(cand):
             _FONTS[kind] = cand
             return cand
@@ -185,6 +191,11 @@ def _norm(a, b, c):
     nx, ny, nz = uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx
     L = math.sqrt(nx * nx + ny * ny + nz * nz) or 1.0
     return (nx / L, ny / L, nz / L)
+
+
+ROOF_ALPHA = 1.0        # 屋面整体透明度系数（第三张图剖看时调低，让梁架透出来）
+ROOF_LINES = True       # 是否画瓦垄/椽条细线（剖看图里关掉，玻璃罩才干净）
+HALO = ()               # 需要白描边的 part 名（压在玻璃罩下的梁架/檩椽）
 
 
 def _shade(n):
@@ -496,24 +507,26 @@ BRICK = (152, 160, 164)
 BRICK_DEEP = (120, 128, 133)
 
 
-def _uv(p, zk=0.95):
+def _uv(p, zk=0.95, c=0.866, s=0.5):
+    """轴测投影到图纸坐标。c/s 由视角决定（axo 0.866/0.5，front 1/0）——
+    取景 bbox 必须用同一个投影，否则正立面会按轴测的进深撑大、主体被压小。"""
     x, y, z = p
-    return ((x - y) * 0.866, (x + y) * 0.5 - z * zk)
+    return ((x - y) * c, (x + y) * s - z * zk)
 
 
-def _uv_bbox(model, zk=0.95):
+def _uv_bbox(model, zk=0.95, c=0.866, s=0.5):
     us, vs = [], []
     for fac in model['faces']:
         for p in _fs(fac)[0]:
-            u, v = _uv(p, zk)
+            u, v = _uv(p, zk, c, s)
             us.append(u); vs.append(v)
     for e in model.get('lines', []):
         seg = _line_parts(e)[0]
         for p in seg:
-            u, v = _uv(p, zk)
+            u, v = _uv(p, zk, c, s)
             us.append(u); vs.append(v)
-    for c in model.get('callouts', []):
-        u, v = _uv(c['at'], zk)
+    for co in model.get('callouts', []):
+        u, v = _uv(co['at'], zk, c, s)
         us.append(u); vs.append(v)
     if not us:
         return (0.0, 0.0, 1.0, 1.0)
@@ -581,6 +594,17 @@ def brick_tri(gx, ys, shz, ridge_z, course=0.24, color=BRICK):
     return out
 
 
+def _band_half(x, y, tx, ty, pts):
+    """横栱半长：取同排相邻斗拱间距的一半，使整排横栱首尾相接成连续横带。"""
+    pr = sorted((px * tx + py * ty) for (px, py) in pts)
+    p0 = x * tx + y * ty
+    i = min(range(len(pr)), key=lambda j: abs(pr[j] - p0))
+    left = pr[i] - pr[i - 1] if i > 0 else 0.0
+    right = pr[i + 1] - pr[i] if i + 1 < len(pr) else 0.0
+    half = max(0.44, 0.5 * max(left, right))
+    return half
+
+
 def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
     """斗拱。style: jixin(计心造,每跳加横栱) | touxin(偷心造,只出华栱) | yidou3sheng(一斗三升)"""
     _prev = _PART[0]; part('斗拱')
@@ -627,7 +651,8 @@ def bracket_set(pts, z0, z1, proj=0.32, kind='body', style='jixin'):
             out += _plank(x + vx * reach * 0.45, y + vy * reach * 0.45, vx, vy,
                           reach * 1.1, 0.17, zz, zz + dz * 0.55, kind)
             if style != 'touxin':          # 计心造才有跳头横栱
-                out += _plank(x, y, tx, ty, 0.60, 0.15, zz, zz + dz * 0.5, kind)
+                out += _plank(x, y, tx, ty, _band_half(x, y, tx, ty, pts), 0.15,
+                              zz, zz + dz * 0.5, kind)
     _PART[0] = _prev
     return out
 
@@ -751,9 +776,9 @@ def roof_hip(x0, x1, yh, eave_z, tx0, tx1, ty, tz, bands=5, kind='accent', curve
         return L(yh, ty, t)
 
     rows = [i / float(bands) for i in range(bands + 1)]
-    al_f = int(_ral(0, -1) * 0.86)      # 前排坡（朝观察者）最重
-    al_b = int(_ral(0, 1) * 0.50)
-    al_e = int(_ral(-1, 0) * 0.66)
+    al_f = int(_ral(0, -1) * 0.86 * ROOF_ALPHA)   # 前排坡（朝观察者）最重
+    al_b = int(_ral(0, 1) * 0.50 * ROOF_ALPHA)
+    al_e = int(_ral(-1, 0) * 0.66 * ROOF_ALPHA)
 
     for i in range(bands):
         t0, t1 = rows[i], rows[i + 1]
@@ -775,7 +800,7 @@ def roof_hip(x0, x1, yh, eave_z, tx0, tx1, ty, tz, bands=5, kind='accent', curve
                          (xb1, -ya1, z1), (xb0, -ya0, z0)), kind, alpha=al_e))
 
     # 瓦垄：沿坡向的曲线，前坡/后坡各画一套
-    nt = max(6, int((x1 - x0) / 0.26))
+    nt = max(6, int((x1 - x0) / 0.26)) if ROOF_LINES else 0
     for j in range(1, nt):
         u = float(j) / nt
         xe = L(x0, x1, u)
@@ -802,7 +827,7 @@ def roof_hip(x0, x1, yh, eave_z, tx0, tx1, ty, tz, bands=5, kind='accent', curve
         p_, q_ = corners[i], corners[(i + 1) % 4]
         faces.append(_F(((p_[0], p_[1], p_[2] - 0.16), (q_[0], q_[1], q_[2] - 0.16),
                          (q_[0], q_[1], q_[2] + 0.02), (p_[0], p_[1], p_[2] + 0.02)),
-                        kind, alpha=62))
+                        kind, alpha=int(62 * ROOF_ALPHA)))
         lines.append(((p_, q_), ACCENT, 1.6, None))
 
     # 戗脊：四条，从檐角沿角弧收向脊端
@@ -933,7 +958,12 @@ def ridge_box(x0, x1, z, h=0.30, chiwen=True, kind='body', orn=None):
                     (0.34, 0.74), (0.20, 0.86), (0.04, 0.80), (-0.06, 0.56),
                     (-0.04, 0.24)]
         xa, xb = rx - 0.065, rx + 0.065
-        pts = [(sgn * yy, z + h * 0.30 + zz * H) for yy, zz in prof]
+        if orn in ('chiwei', 'chiwen'):      # 尾根扎进脊身：基部从脊顶 z 起算，并在脊上补一段脊脚
+            zbase = z
+            out += box(rx - 0.09, -0.135, z, rx + 0.09, 0.135, z + h * 0.34, kind)
+        else:
+            zbase = z + h * 0.30
+        pts = [(sgn * yy, zbase + zz * H) for yy, zz in prof]
         out.append(_F(tuple((xa, py, pz) for py, pz in pts), kind))
         out.append(_F(tuple((xb, py, pz) for py, pz in reversed(pts)), kind))
         for i in range(len(pts)):
@@ -1119,11 +1149,14 @@ def _draw_seg(cv, seg, ax, buf, sc, col, w, key):
         cv.line([ax.pt(seg[0]), ax.pt(seg[1])], col, w)
         return
     w = _tier_w(w)
+    _halo = bool(HALO) and _PART[0] in HALO
     for pts, vis in _runs(seg[0], seg[1], ax, buf, sc):
         if len(pts) < 2:
             continue
         p2 = [ax.pt(p) for p in pts]
         if vis:
+            if _halo:                       # 垫一道纸色：线在玻璃罩下也立得住
+                cv.line(p2, PAPER, w + 2.4)
             cv.line(p2, col, w)
         else:
             cv.dash(p2, INK4, max(0.6, w * 0.85), 3.4, 3.2, 128)
@@ -1514,7 +1547,7 @@ def build_ting(p):
 
     if eaves > 1:
         h2 = half * 0.60
-        rf, rl = roof_ring(ring(eave_r), z1, ring(h2 + 0.20), z1 + 0.92, alpha=24)
+        rf, rl = roof_ring(ring(eave_r), z1, ring(h2 + 0.20), z1 + 0.92, alpha=int(24 * ROOF_ALPHA))
         f += rf
         ln += rl
         cal.append({'at': (0, -eave_r * 0.92, z1 + 0.34), 'label': '下檐屋面'})
@@ -2367,7 +2400,7 @@ def build_qiao5(p):
     # 拱券（券脸石环 + 券石缝）
     for (cx, hspan, R, cz, h) in arches:
         a0 = math.asin(min(1.0, hspan / R))
-        af, al = arch_ring(cx, cz, R, 0.42, a0, -W, W, segs=16, alpha=76)
+        af, al = arch_ring(cx, cz, R, 0.42, a0, -W - 0.12, W + 0.12, segs=16, alpha=76)
         f += af
         ln += al
         for yy in (-W, W):
@@ -2428,7 +2461,8 @@ BUILDERS = {'ting': build_ting, 'lang': build_lang, 'dian': build_dian,
 
 # ------------------------------------------------------------------ 版式
 
-RATIOS = {'3:4': (2400, 3200), '4:3': (2400, 1800), '1:1': (2400, 2400), '9:16': (2160, 3840)}
+RATIOS = {'3:4': (2400, 3200), '4:3': (2400, 1800), '1:1': (2400, 2400),
+          '16:9': (3200, 1800), '3:2': (2400, 1600), '9:16': (2160, 3840)}
 
 
 def _wrap(cv, text, font, maxw):
@@ -2529,7 +2563,7 @@ def _legend_strip(cv, cals, f_name, f_num, x0, y0, maxw, row_h, r_leg, ts, top=N
     return y + row_h * 0.5, centers
 
 
-def _uv_bbox_focus(model, focus=None, zk=0.95):
+def _uv_bbox_focus(model, focus=None, zk=0.95, c=0.866, s=0.5):
     us, vs = [], []
     def keep(p):
         if not focus:
@@ -2546,15 +2580,15 @@ def _uv_bbox_focus(model, focus=None, zk=0.95):
     for fac in model['faces']:
         for p in _fs(fac)[0]:
             if keep(p):
-                u, v = _uv(p, zk)
+                u, v = _uv(p, zk, c, s)
                 us.append(u); vs.append(v)
     for e in model.get('lines', []):
         for p in _line_parts(e)[0]:
             if keep(p):
-                u, v = _uv(p, zk)
+                u, v = _uv(p, zk, c, s)
                 us.append(u); vs.append(v)
     if not us:
-        return _uv_bbox(model, zk)
+        return _uv_bbox(model, zk, c, s)
     return (min(us), min(vs), max(us), max(vs))
 
 
@@ -2705,9 +2739,14 @@ def render(job):
 
     # ── 取景：focus 框决定 k（可以不画全）──────────────────
     focus = job.get('zoom')
-    umin, vmin, umax, vmax = _uv_bbox(model)
+    _vw0 = job.get('view', 'axo')
+    if _vw0 == 'front':
+        _bc, _bs, _bzk = 1.0, 0.0, 1.0
+    else:
+        _bc, _bs, _bzk = 0.866, 0.5, float(job.get('z_ratio', 0.95))
+    umin, vmin, umax, vmax = _uv_bbox(model, _bzk, _bc, _bs)
     bw_all, bh_all = max(1e-6, umax - umin), max(1e-6, vmax - vmin)
-    bmin, bmin2, bmax, bmax2 = _uv_bbox_focus(model, focus)
+    bmin, bmin2, bmax, bmax2 = _uv_bbox_focus(model, focus, _bzk, _bc, _bs)
     bw = max(1e-6, bmax - bmin)
     bh = max(1e-6, bmax2 - bmin2)
     k = min((x1 - x0) / bw, (y1 - y0) / bh)
@@ -2850,7 +2889,8 @@ def render(job):
 
     info = _qa(dict(x0=x0, y0=y0, x1=x1, y1=y1), (umin, vmin, umax, vmax),
                k, ox, oy, model, W, H, rule_y, photo, mx, maxlab, cv, f_name,
-               focus_box=(bmin, bmin2, bmax, bmax2))
+               focus_box=(bmin, bmin2, bmax, bmax2),
+               zk=_bzk, vc=_bc, vs=_bs)
     return cv.finish(), info
 
 

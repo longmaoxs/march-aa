@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .DS_Store
 out/
+
+# 字体 18MB，不入库；用 scripts/fetch_font.py 取
+march-aa-structure-view/assets/fonts/*.ttf

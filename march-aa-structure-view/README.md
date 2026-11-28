@@ -58,6 +58,10 @@
 # 需要 numpy + Pillow（系统自带 python3 往往没有）
 pip install -r requirements.txt
 
+# 楷体（LXGW 文楷，18MB）不在仓库里，首次用先取一次
+python3 scripts/fetch_font.py          # 取不到就退回系统楷/宋，图仍能出
+python3 scripts/fetch_font.py --check  # 看看现在认得哪个字体
+
 # 出一条：重檐攒尖亭
 python scripts/structure_plate.py \
     --json assets/samples/ting_square_2eave.json \

@@ -94,6 +94,28 @@ def main():
     ax = SP.Axo(k=k, zk=float(job.get('z_ratio', 0.95)), ox=ox, oy=oy)
     SP.draw_model(cv, model2, ax)
 
+    # ── 各层编号轴（左侧竖向虚线 + 每层短引线）──────────────────
+    if job.get('layerAxis', True):
+        ax_x = x0 + int(18 * ts)
+        px = [(p[0], p[1], p[2]) for f in ex_f for p in SP._fs(f)[0]]
+        ys_all = [ax.pt(q)[1] for q in px]
+        cv.dash([(ax_x, min(ys_all) - int(10 * ts)), (ax_x, max(ys_all) + int(10 * ts))],
+                SP.INK3, 1.0, 6, 5, 190)
+        cx = sum(q[0] for q in px) / float(len(px))
+        cy = sum(q[1] for q in px) / float(len(px))
+        for i in range(n):
+            band = bands[i]
+            if not band:
+                continue
+            # 用「这一层抬升后的 z 中点」定编号高度，保证自上而下均匀，不被构件跨度带偏
+            zc_i = zmin + (i + 0.5) * step + i * gap
+            yy = ax.pt((cx, cy, zc_i))[1]
+            lx = min(ax.pt(q)[0] for f in band for q in SP._fs(f)[0])
+            cv.dash([(ax_x, yy), (lx - int(6 * ts), yy)], SP.INK4, 0.9, 4, 4, 170)
+            _r = int(19 * ts)
+            cv.ellipse(ax_x, yy, _r, _r, fill=SP.PAPER, outline=SP.ACCENT_MID, lw=1.3)
+            cv.text(ax_x, yy, '%02d' % (i + 1), SP.font('num', F(22)), SP.ACCENT, anchor='mm')
+
     # ── 右栏：标题 + 四条（每条自带多行说明）+ 结语 + logo ──────
     f_era = SP.font('kai', F(88))
     f_sub = SP.font('hei', F(38))

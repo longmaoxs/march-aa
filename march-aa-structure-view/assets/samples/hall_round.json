@@ -1,36 +1,70 @@
 {
- "family": "dian",
- "ratio": "3:4",
- "photo": "/tmp/hall.jpg",
- "title": "三间卷棚厅堂",
- "subtitle": "· 构造关系轴测",
- "desc": [
-  "卷棚顶无正脊，两坡以圆脊相接。",
-  "园林、民居常见，屋面柔和不起翘。"
- ],
- "params": {
-  "style": "barrel",
-  "bays": 3,
-  "bay": 4.0,
-  "depth_bays": 3,
-  "bayd": 3.6,
-  "brackets": true,
-  "col_h": 4.6,
-  "bracket_h": 0.44,
-  "eave_out": 0.11,
-  "plat_h": 1.15,
-  "components": {
-   "column_base": "fupen",
-   "bracket": "touxin",
-   "ridge_orn": "chiwei",
-   "column_shaft": "suo",
-   "arch_beam": "lan_e",
-   "steps": "chuídai",
-   "window": "zhiling",
-   "platform_base": "plain",
-   "railing": "none"
+  "family": "dian",
+  "ratio": "3:4",
+  "photo": "/tmp/hall.jpg",
+  "title": "三间卷棚厅堂",
+  "subtitle": "· 构造关系轴测",
+  "desc": [
+    "卷棚顶无正脊，两坡以圆脊相接。",
+    "园林、民居常见，屋面柔和不起翘。"
+  ],
+  "params": {
+    "style": "barrel",
+    "bays": 3,
+    "bay": 4.0,
+    "depth_bays": 3,
+    "bayd": 3.6,
+    "brackets": true,
+    "col_h": 4.6,
+    "bracket_h": 0.44,
+    "eave_out": 0.11,
+    "plat_h": 1.15,
+    "components": {
+      "column_base": "fupen",
+      "bracket": "touxin",
+      "ridge_orn": "chiwei",
+      "column_shaft": "suo",
+      "arch_beam": "lan_e",
+      "steps": "chuídai",
+      "window": "zhiling",
+      "platform_base": "plain",
+      "railing": "none"
+    }
+  },
+  "view": "axo",
+  "z_ratio": 0.82,
+  "callout_xy": {
+    "台基踏跺": [
+      0.759,
+      0.652
+    ],
+    "柱础（覆盆式）": [
+      0.257,
+      0.603
+    ],
+    "额枋": [
+      0.322,
+      0.524
+    ],
+    "墙体直棂窗": [
+      0.569,
+      0.401
+    ],
+    "斗拱（偷心造）": [
+      0.743,
+      0.371
+    ],
+    "金柱": [
+      0.256,
+      0.55
+    ],
+    "卷棚屋面": [
+      0.669,
+      0.363
+    ],
+    "梁架": [
+      0.568,
+      0.39
+    ]
   }
- },
- "view": "axo",
- "z_ratio": 0.82
 }

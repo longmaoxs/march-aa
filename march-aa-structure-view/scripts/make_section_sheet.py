@@ -135,6 +135,10 @@ def main():
     job = json.load(open(a.json, encoding='utf-8'))
     p = job.get('params', {})
     fam = job.get('family')
+    # 玻璃罩调低 / 关瓦垄 / 梁架白描边：必须在 build_model 之前设，alpha 是建面时定死的
+    SP.ROOF_ALPHA = float(os.environ.get('ROOF_ALPHA', '0.55'))
+    SP.ROOF_LINES = os.environ.get('ROOF_LINES', '0') != '0'
+    SP.HALO = ('梁架', '檩椽') if os.environ.get('HALO', '0') != '0' else ()
     model = build_model(job)
 
     bays = int(p.get('bays', 5))

@@ -68,12 +68,39 @@ def main(job_path):
     for c in model['callouts']:
         part = SP._part_of(c.get('label'))
         pool = byp.get(part) or []
+        # 构件可见像素太少（大半被墙/屋面遮住）时，最近点法会落到旁边的墙上，
+        # 改用锚点投影更稳。
+        if len(pool) < 1200:
+            ax0, ay0 = ax.pt(c['at'])
+            out[c['label']] = [round(ax0 / W, 3), round(ay0 / H, 3)]
+            print('ANCHOR %-8s part=%-5s px=%5d 锚点' % (c['label'], part, len(pool)))
+            continue
         if not pool:
-            print('MISS  %-8s part=%s 无可见像素' % (c['label'], part))
+            # 该构件整片被遮住（桥台、塔刹、被墙挡住的台基）：退回到「锚点投影」，
+            # 保证徽标仍落在构件所在的方位，而不是消失。
+            ax0, ay0 = ax.pt(c['at'])
+            out[c['label']] = [round(ax0 / W, 3), round(ay0 / H, 3)]
+            print('FALLBK %-8s part=%s 用锚点 %.3f,%.3f' % (c['label'], part,
+                                                           ax0 / W, ay0 / H))
             continue
         ax0, ay0 = ax.pt(c['at'])
         fx, fy = ax0 / W, ay0 / H
-        best = min(pool, key=lambda t: (t[0] - fx) ** 2 + (t[1] - fy) ** 2)
+        # 底部构件（柱础/金柱/翼角）取「横向最近、且尽量靠下」的那一点：
+        # 只按欧氏最近会落到旁边的墙面或远角上。
+        if part in ('柱础', '金柱', '翼角'):
+            # 这三类整片贴在地面/檐角，像素池里混着墙与台基面，最近点会跑偏；
+            # 直接用锚点（构件几何中心）投影，落点一定在构件上。
+            out[c['label']] = [round(fx, 3), round(fy, 3)]
+            print('ANCHOR %-8s part=%-5s px=%5d 锚点' % (c['label'], part, len(pool)))
+            continue
+        else:
+            best = min(pool, key=lambda t: (t[0] - fx) ** 2 + (t[1] - fy) ** 2)
+        # 兜底：最近点若离锚点太远（>0.10 归一化），说明池子里混进了别的构件，
+        # 退回到锚点投影，宁可压在构件中心，也不要飘到旁边的墙上。
+        if abs(best[0] - fx) + abs(best[1] - fy) > 0.06:
+            out[c['label']] = [round(fx, 3), round(fy, 3)]
+            print('GUARD  %-8s part=%-5s px=%6d 离锚点过远->锚点' % (c['label'], part, len(pool)))
+            continue
         out[c['label']] = [round(best[0], 3), round(best[1], 3)]
         print('%-8s part=%-5s px=%6d  ->  [%.3f, %.3f]' % (c['label'], part, len(pool), best[0], best[1]))
 

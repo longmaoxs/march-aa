@@ -1,37 +1,83 @@
 {
- "family": "dian",
- "ratio": "3:4",
- "photo": "/tmp/hall.jpg",
- "title": "三间重檐大殿",
- "subtitle": "· 构造关系轴测",
- "desc": [
-  "下檐腰檐环绕，上檐庑殿顶。",
-  "重檐是等级最高的屋顶做法。"
- ],
- "params": {
-  "style": "wudian",
-  "bays": 3,
-  "bay": 4.0,
-  "depth_bays": 3,
-  "bayd": 3.6,
-  "brackets": true,
-  "col_h": 4.6,
-  "bracket_h": 0.44,
-  "eave_out": 0.11,
-  "plat_h": 1.15,
-  "components": {
-   "column_base": "fupen",
-   "bracket": "touxin",
-   "ridge_orn": "chiwei",
-   "column_shaft": "suo",
-   "arch_beam": "lan_e",
-   "steps": "chuídai",
-   "window": "zhiling",
-   "platform_base": "plain",
-   "railing": "none"
+  "family": "dian",
+  "ratio": "3:4",
+  "photo": "/tmp/hall.jpg",
+  "title": "三间重檐大殿",
+  "subtitle": "· 构造关系轴测",
+  "desc": [
+    "下檐腰檐环绕，上檐庑殿顶。",
+    "重檐是等级最高的屋顶做法。"
+  ],
+  "params": {
+    "style": "wudian",
+    "bays": 3,
+    "bay": 4.0,
+    "depth_bays": 3,
+    "bayd": 3.6,
+    "brackets": true,
+    "col_h": 4.6,
+    "bracket_h": 0.44,
+    "eave_out": 0.11,
+    "plat_h": 1.15,
+    "components": {
+      "column_base": "fupen",
+      "bracket": "touxin",
+      "ridge_orn": "chiwei",
+      "column_shaft": "suo",
+      "arch_beam": "lan_e",
+      "steps": "chuídai",
+      "window": "zhiling",
+      "platform_base": "plain",
+      "railing": "none"
+    },
+    "eaves": 2
   },
-  "eaves": 2
- },
- "view": "axo",
- "z_ratio": 0.82
+  "view": "axo",
+  "z_ratio": 0.82,
+  "callout_xy": {
+    "台基踏跺": [
+      0.742,
+      0.626
+    ],
+    "柱础（覆盆式）": [
+      0.274,
+      0.58
+    ],
+    "额枋": [
+      0.335,
+      0.507
+    ],
+    "墙体直棂窗": [
+      0.564,
+      0.393
+    ],
+    "斗拱（偷心造）": [
+      0.733,
+      0.35
+    ],
+    "金柱": [
+      0.272,
+      0.531
+    ],
+    "四坡屋面": [
+      0.668,
+      0.349
+    ],
+    "翼角": [
+      0.522,
+      0.219
+    ],
+    "正脊鸱尾（唐式）": [
+      0.331,
+      0.255
+    ],
+    "腰檐": [
+      0.798,
+      0.534
+    ],
+    "梁架": [
+      0.563,
+      0.387
+    ]
+  }
 }
