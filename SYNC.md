@@ -2,7 +2,7 @@
 
 仓库地址：<https://github.com/longmaoxs/march-aa>（远程走 SSH：`git@github.com:longmaoxs/march-aa.git`）
 
-本地目录：`/Users/louis/workspace/skills/march-skills/march-aa`
+本地目录：`/Users/louis/codespace/march-aa`
 
 ## 认证：SSH（已配置好）
 
@@ -50,7 +50,7 @@ git config user.email "356496579+longmaoxs@users.noreply.github.com"
 改完代码/文档，一条命令：
 
 ```bash
-cd /Users/louis/workspace/skills/march-skills/march-aa
+cd /Users/louis/codespace/march-aa
 ./sync.sh "加了塔的密檐参数"
 ```
 
@@ -61,8 +61,8 @@ cd /Users/louis/workspace/skills/march-skills/march-aa
 ## 只看状态
 
 ```bash
-git -C /Users/louis/workspace/skills/march-skills/march-aa status -sb
-git -C /Users/louis/workspace/skills/march-skills/march-aa log --oneline -5
+git -C /Users/louis/codespace/march-aa status -sb
+git -C /Users/louis/codespace/march-aa log --oneline -5
 ```
 
 ## 注意
