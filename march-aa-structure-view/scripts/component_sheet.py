@@ -31,35 +31,55 @@ def F(n):
 
 
 # ── 斗拱 ────────────────────────────────────────────────────────────────
-def _dougong_core(P, R, sh, back=False):
-    """斗拱的层叠骨架：栌斗 → 栱 → 散斗 → 昂 → 令栱 → 耍头。"""
-    # 栌斗 32×20 分，斗欹内凹
+def _gong(P, sh, x0, x1, z0, z1, cut=3.0, fill=None):
+    """一根栱：两端带卷杀（45° 切角），比直角块像木构件。"""
+    zt, zb = z1, z0
+    pts = [P(x0 + cut, zt), P(x1 - cut, zt), P(x1, zt - cut * 0.9),
+           P(x1, zb + cut * 0.6), P(x1 - cut * 0.8, zb),
+           P(x0 + cut * 0.8, zb), P(x0, zb + cut * 0.6), P(x0, zt - cut * 0.9)]
+    sh.poly(pts, fill=fill or WOOD)
+
+
+def _dou(P, sh, x, z, w=9.0, h=10.0):
+    """一个小斗：上宽下窄，斗欹内凹。"""
+    sh.poly([P(x + 1.2, z), P(x + w - 1.2, z), P(x + w, z + h * 0.35),
+             P(x + w, z + h), P(x, z + h), P(x, z + h * 0.35)], fill=WOOD2)
+
+
+def _dougong_core(P, R, sh):
+    """宋式六铺作单杪双下昂的层叠骨架（材分制，1 分 = 15mm）。
+
+    层序：栌斗 → 泥道栱/华栱 → 交互斗 → 双下昂（外端低、内尾高）→ 令栱 → 散斗 → 耍头。
+    """
+    # 栌斗 32 分宽、20 分高
     sh.poly([P(-10, 0), P(10, 0), P(16, 12), P(16, 20), P(-16, 20), P(-16, 12)], fill=WOOD)
+    sh.line(P(-16, 13), P(16, 13), w=A.LW_FINE, col=A.INK2)
 
-    # 泥道栱：62 分长，两端各一散斗
-    sh.poly(R(-31, 20, 31, 35), fill=WOOD)
-    for x in (-31, 22):
-        sh.poly(R(x, 35, x + 9, 45), fill=WOOD2)
+    # 泥道栱（横 62 分，带卷杀）+ 两端散斗
+    _gong(P, sh, -31, 31, 20, 35)
+    _dou(P, sh, -31, 35, 9, 10)
+    _dou(P, sh, 22, 35, 9, 10)
 
-    # 华栱：向外 30 分，端头交互斗
-    sh.poly(R(-10, 20, 50, 35), fill=WOOD2)
-    sh.poly(R(44, 35, 56, 45), fill=WOOD)
+    # 华栱（第一跳，向外 30 分）+ 交互斗
+    _gong(P, sh, -10, 50, 20, 35, cut=4, fill=WOOD2)
+    _dou(P, sh, 44, 35, 12, 11)
 
-    # 双下昂：25°，每跳 30 分，压在交互斗上
-    def ang(z0, x0, x1, drop):
-        return [P(x0, z0), P(x1, z0 + drop), P(x1, z0 + drop - 6), P(x0, z0 - 6)]
+    # 双下昂：外端低、内尾高，斜度约 25°
+    def ang(x_in, z_in, x_out, z_out, th=6.0):
+        return [P(x_in, z_in), P(x_out, z_out),
+                P(x_out, z_out - th), P(x_in, z_in - th)]
 
-    sh.poly(ang(45, 50, 86, 17), fill=WOOD)
-    sh.poly(ang(60, 52, 96, 17), fill=WOOD)
+    sh.poly(ang(46, 60, 84, 45), fill=WOOD)      # 第一根昂：尖在 45 分高
+    sh.poly(ang(48, 72, 92, 57), fill=WOOD)      # 第二根昂：压在上面
 
-    # 令栱（72 分）+ 三散斗 + 耍头
-    sh.poly(R(78, 60, 94, 74), fill=WOOD2)
-    for x in (76, 86, 96):
-        sh.poly(R(x, 74, x + 9, 84), fill=WOOD)
-    sh.poly(R(90, 84, 108, 94), fill=WOOD2)
+    # 令栱（承在第一根昂尖上）+ 三散斗 + 耍头
+    _gong(P, sh, 74, 92, 45, 58, cut=3, fill=WOOD2)
+    for x in (72, 82, 92):
+        _dou(P, sh, x, 58, 9, 9)
+    _gong(P, sh, 86, 104, 67, 77, cut=2.5, fill=WOOD2)
 
 
-def draw_dougong_front(sh, cx, base, s=0.055):
+def draw_dougong_front(sh, cx, base, s=0.045):
     """正立面：柱头 + 斗拱 + 斜拱（45° 斜插，三圣殿的记号）。"""
     def P(x, z):
         return (cx + F(x) * s, base - F(z) * s)
@@ -67,16 +87,22 @@ def draw_dougong_front(sh, cx, base, s=0.055):
     def R(x0, z0, x1, z1):
         return [P(x0, z0), P(x1, z0), P(x1, z1), P(x0, z1)]
 
-    sh.cut(R(-11, -20, 11, 0))                       # 柱身剖切
-    # 斜拱先画（在后面）：两条 45° 短臂，从栌斗口斜出
-    for sg in (-1, 1):
-        sh.poly([P(sg * 8, 20), P(sg * 34, 46), P(sg * 46, 38), P(sg * 20, 14)],
-                fill=(236, 229, 216))
+    sh.cut(R(-11, -18, 11, 0))
     _dougong_core(P, R, sh)
-    return dict(top=94, left=-31, right=108)
+
+    # 斜拱：45° 斜向「朝观者」出挑，正立面里是被透视压缩的短粗斜块，
+    # 不是满长的斜杆——画长了会变成一个 X，把整朵都盖住。
+    for sg in (-1, 1):
+        sh.poly([P(sg * 9, 24), P(sg * 26, 42), P(sg * 33, 36), P(sg * 16, 18)],
+                fill=(240, 234, 222))
+
+    marks = [('01', P(0, 10)), ('02', P(-16, 27)), ('03', P(20, 27)),
+             ('04', P(66, 54)), ('05', P(-30, 38)),
+             ('06', P(84, 52)), ('07', P(100, 72))]
+    return dict(top=94, left=-50, right=108, marks=marks)
 
 
-def draw_dougong_side(sh, cx, base, s=0.055):
+def draw_dougong_side(sh, cx, base, s=0.045):
     """侧立面：沿出跳方向剖开，看昂的斜面与层叠次序。"""
     def P(x, z):
         return (cx + F(x) * s, base - F(z) * s)
@@ -84,18 +110,19 @@ def draw_dougong_side(sh, cx, base, s=0.055):
     def R(x0, z0, x1, z1):
         return [P(x0, z0), P(x1, z0), P(x1, z1), P(x0, z1)]
 
-    sh.cut(R(-10, -20, 10, 0))
+    sh.cut(R(-10, -18, 10, 0))
     sh.poly([P(-10, 0), P(10, 0), P(16, 12), P(16, 20), P(-16, 20), P(-16, 12)], fill=WOOD)
-    sh.poly(R(-12, 20, 12, 35), fill=WOOD)           # 泥道栱截面
-    sh.poly(R(-8, 35, 34, 47), fill=WOOD2)           # 华栱（侧看一段）
-    for (z0, x0, x1, drop) in ((47, 34, 70, 17), (62, 34, 82, 17)):
-        sh.poly([P(x0, z0), P(x1, z0 + drop), P(x1, z0 + drop - 6), P(x0, z0 - 6)], fill=WOOD)
-    sh.poly(R(64, 64, 82, 78), fill=WOOD2)           # 令栱截面
-    sh.poly(R(80, 78, 100, 88), fill=WOOD2)          # 耍头
+    _gong(P, sh, -12, 12, 20, 35, cut=2)             # 泥道栱截面
+    _gong(P, sh, -8, 34, 35, 47, cut=3, fill=WOOD2)  # 华栱（侧看一段）
+    for (xi, zi, xo, zo) in ((34, 60, 68, 45), (36, 72, 76, 57)):
+        sh.poly([P(xi, zi), P(xo, zo), P(xo, zo - 6), P(xi, zi - 6)], fill=WOOD)
+    _gong(P, sh, 58, 76, 45, 58, cut=2.5, fill=WOOD2)   # 令栱截面
+    _gong(P, sh, 70, 90, 67, 77, cut=2, fill=WOOD2)     # 耍头
 
-    sh.line(P(34, 47), P(76, 47), w=A.LW_FINE, col=A.INK3, dash=(3, 1.6))
-    sh.text(P(56, 49)[0], P(56, 49)[1], '25°', 'num', 2.8, A.INK3, anchor='mb')
-    return dict(top=88, left=-16, right=100)
+    sh.line(P(30, 62), P(74, 62), w=A.LW_FINE, col=A.INK3, dash=(3, 1.6))
+    sh.line(P(34, 60), P(68, 45), w=A.LW_FINE, col=A.INK3, dash=(2, 1.2))
+    sh.text(P(52, 64)[0], P(52, 64)[1], '25°', 'num', 2.6, A.INK3, anchor='mb')
+    return dict(top=88, left=-16, right=100, marks=[])
 
 
 # ── 页面 ────────────────────────────────────────────────────────────────
@@ -108,8 +135,6 @@ def page(spec, out, draw_front, draw_side, k_mm=1.0):
 
     lead = spec['lead']
     x, y = L, 38.0
-    for ch in lead:
-        pass
     # 简单折行：每行 ~52 个汉字宽（按 3.2pt 估）
     line, lines = '', []
     for ch in lead:
@@ -124,9 +149,9 @@ def page(spec, out, draw_front, draw_side, k_mm=1.0):
     y += len(lines) * 5.4 + 6
 
     # 两个视图：共用基线、同一比例
-    base = 128.0
-    cxf, cxs = 60.0, 150.0
-    draw_front(sh, cxf, base)
+    base = 160.0
+    cxf, cxs = 42.0, 126.0
+    mf = draw_front(sh, cxf, base)
     draw_side(sh, cxs, base)
     sh.axis((cxf, base - 4), (cxf, base - 24 - 78))
     sh.axis((cxs, base - 4), (cxs, base - 24 - 70))
@@ -134,29 +159,26 @@ def page(spec, out, draw_front, draw_side, k_mm=1.0):
     sh.text(cxf, base + 12, '正立面 · 出跳与斜拱', 'hei', 3.0, A.INK3, 'mm')
     sh.text(cxs, base + 12, '侧立面 · 昂的斜面', 'hei', 3.0, A.INK3, 'mm')
 
-    # 引线编号（正立面）
-    SC = 0.055
-    leaders = [((cxf, base - 8 * MU * SC), (28, base + 16)),
-               ((cxf - 22 * MU * SC, base - 27 * MU * SC), (28, base - 8)),
-               ((cxf + 6 * MU * SC, base - 40 * MU * SC), (100, base - 26)),
-               ((cxf + 50 * MU * SC, base - 55 * MU * SC), (108, base - 4)),
-               ((cxf - 38 * MU * SC, base - 40 * MU * SC), (20, base - 30)),
-               ((cxf + 88 * MU * SC, base - 70 * MU * SC), (112, base - 34)),
-               ((cxf + 106 * MU * SC, base - 89 * MU * SC), (112, base - 46))]
-    for i, (pt, tgt) in enumerate(leaders):
-        sh.leader(pt, '%02d' % (i + 1), tgt, side=1 if tgt[0] > cxf else -1, r=2.3, fs=3.0)
+    # 引线编号（正立面）：左侧的号放左缘，右侧的号放两图之间/右缘
+    # 编号统一排在两幅图的外侧栏，引线短、互不交叉
+    lefts = [m for m in mf.get('marks', []) if m[1][0] <= cxf + 8]
+    rights = [m for m in mf.get('marks', []) if m[1][0] > cxf + 8]
+    for i, (no, pt) in enumerate(sorted(lefts, key=lambda m: -m[1][1])):
+        sh.leader(pt, no, (14.0, base - 18 - i * 11.0), side=-1, r=2.2, fs=2.6)
+    for i, (no, pt) in enumerate(sorted(rights, key=lambda m: -m[1][1])):
+        sh.leader(pt, no, (112.0, base - 12 - i * 11.0), side=1, r=2.2, fs=2.6)
 
     # 说明两栏
-    yy = 168.0
+    yy = 186.0
     for i, (no, name, desc) in enumerate(spec['parts']):
         col_x = L if i < 4 else 106.0
-        row = yy + (i % 4) * 17.0
+        row = yy + (i % 4) * 16.0
         sh.circle((col_x + 3, row), 2.6, fill=None, outline=A.ACCENT, w=A.LW_FINE)
         sh.text(col_x + 3, row, no, 'num', 2.8, A.ACCENT, 'mm')
         sh.text(col_x + 8, row - 1.2, name, 'hei', 3.6, A.INK, 'lm')
         sh.text(col_x + 8, row + 3.4, desc, 'hei', 2.8, A.INK2, 'lm')
 
-    sh.text(L, 268, spec['note'], 'hei', 2.6, A.INK3, 'lm')
+    sh.text(L, 272, spec['note'], 'hei', 2.6, A.INK3, 'lm')
     sh.scalebar(R - 40, 264, 40, '40 mm')
     sh.save(out)
     sh.to_svg(out.rsplit('.', 1)[0] + '.svg')
